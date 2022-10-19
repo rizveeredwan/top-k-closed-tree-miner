@@ -21,6 +21,10 @@ class Database:
                     if item < 0:
                         if i == len(l)-2:
                             break
+                        """
+                        if len(self.insert_database[sid]) >= 1:
+                            self.insert_database[sid][-1].sort()
+                        """
                         self.insert_database[sid].append([])
                     else:
                         self.insert_database[sid][-1].append(item)

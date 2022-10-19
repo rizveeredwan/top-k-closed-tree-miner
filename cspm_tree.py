@@ -5,6 +5,11 @@ debug_obj = DebugFunctions()
 # index of nodes to track
 global_node_count = 0
 
+# Node mapper
+NODE_MAPPER = {}
+# Two powers
+TWO_POWERS = {} # 4: 2, 8: 3
+
 
 class CSPMTree:
     def __init__(self):
@@ -26,10 +31,13 @@ class CSPMTree:
         # item freq attribute
         self.item_freq = {}
 
+        #subtree detection
+        self.subtree_detection_code = ""
+        self.num_child = -1
         #############
 
     def initializing_sp_tree_node(self, item, event_no, parent_node, parent_item_bitset, count):
-        global global_node_count
+        global global_node_count, NODE_MAPPER, TWO_POWERS
         global_node_count += 1
         # print("Global node count ", global_node_count)
         node = CSPMTree()
@@ -39,63 +47,22 @@ class CSPMTree:
         node.parent_node = parent_node
         node.parent_item_bitset = parent_item_bitset
         node.count = count
+        # subtree detection code
+        parent_node.num_child += 1
+        node.subtree_detection_code = parent_node.subtree_detection_code + str(parent_node.num_child)
+        # storing the node
+        NODE_MAPPER[global_node_count] = node
+        # Two power
+        TWO_POWERS[1 << global_node_count] = node
         return node
 
-    def add_intermediary_node(self, node1, node2):
-        if node1.side_next_link_next is None:
-            node1.side_next_link_next = node2
-            node2.side_next_link_prev = node1
-        if node1.side_next_link_next is not None: # (node1, temp) -> (node1, node2, temp)
-            temp = node1.side_next_link_next
-            node1.side_next_link_next = node2
-            node2.side_next_link_prev = node1
-            node2.side_next_link_next = temp
-            temp.side_next_link_prev = node2
-        return
-
-    def create_links(self, parent, child, link_created=False):
-        if parent.down_next_link_ptr is None:
-            # assert (child.side_next_link_next is None and child.side_next_link_prev is None)
-            parent.down_next_link_ptr= {child.item: [child, child]}
-            return True, False # need to send child upward, no link created
-        if parent.down_next_link_ptr.get(child.item) is None:
-            # assert (child.side_next_link_next is None and child.side_next_link_prev is None)
-            parent.down_next_link_ptr[child.item] = [child, child] # a single connection
-            return True, False # need to send child upward, no link created
-        if parent.down_next_link_ptr[child.item][0] != parent.down_next_link_ptr[child.item][1]: # embeded inside
-            #print(child.side_next_link_next, child.side_next_link_prev)
-            #print(parent.down_next_link_ptr[child.item][0].node_id, parent.down_next_link_ptr[child.item][1].node_id)
-            #print(debug_obj.moves(parent.down_next_link_ptr[child.item][0], parent.down_next_link_ptr[child.item][1]))
-            if link_created is False:
-                assert (child.side_next_link_next is None and child.side_next_link_prev is None)
-                self.add_intermediary_node(node1=parent.down_next_link_ptr[child.item][1], node2=child)
-                parent.down_next_link_ptr[child.item][1] = child
-                return True, True # need to send upward, link created
-            if link_created is True:
-                # stretch from end
-                if child.side_next_link_prev == parent.down_next_link_ptr[child.item][1]:
-                    parent.down_next_link_ptr[child.item][1] = child
-                    return True, True  # need to send upward, link created
-                if child.side_next_link_next == parent.down_next_link_ptr[child.item][0]:
-                    parent.down_next_link_ptr[child.item][0] = child
-                    return True, True  # need to send upward, link created
-                else:
-                    return False, True  # already enclosed, link created
-        if parent.down_next_link_ptr[child.item][0] == parent.down_next_link_ptr[child.item][1]: # a single node existed
-            if link_created is False:
-                assert(child.side_next_link_next is None and child.side_next_link_prev is None)
-                self.add_intermediary_node(node1=parent.down_next_link_ptr[child.item][0], node2=child)
-                link_created = True
-            parent.down_next_link_ptr[child.item][1] = child
-            return True, link_created # need to send upward, link created
-
-    def insert(self, sp_tree_node, processed_sequence, event_no, item_no, event_bitset, successors, seq_sum):
+    def insert(self, sp_tree_node, processed_sequence, event_no, item_no, event_bitset):
         # print("event ", event_no, item_no)
         global global_node_count
         if event_no >= len(processed_sequence):
             return
         if item_no >= len(processed_sequence[event_no]):
-            self.insert(sp_tree_node, processed_sequence, event_no + 1, 0, 0, successors, seq_sum)
+            self.insert(sp_tree_node, processed_sequence, event_no + 1, 0, 0)
             return
         item = processed_sequence[event_no][item_no]
         if sp_tree_node.child_link is None:
@@ -109,40 +76,53 @@ class CSPMTree:
                                                   parent_item_bitset=event_bitset, count=1)
             sp_tree_node.child_link[item][event_no] = node
             new_node_created = True
+        self.insert(sp_tree_node=node, processed_sequence=processed_sequence, event_no=event_no, item_no=item_no + 1,
+                    event_bitset=event_bitset | (1 << item))
+        return
 
-        """
-        # First, mid, last updating to calculate CETable_s
-        self.SequenceSummarizerSequenceExtensionUpdate(seq_sum, item, event_no + actual_event_no + 1)
-        # updating the sequence summarizer table to perform CETable_i
-        if (item_no >= 1):
-            self.SequenceSummarizerItemsetExtensionUpdate(seq_sum, item, event_bitset)
-        """
-        self.insert(sp_tree_node=node, processed_sequence=processed_sequence, event_no=event_no,
-                    item_no=item_no + 1, event_bitset=event_bitset | (1 << item), successors=successors,
-                    seq_sum=seq_sum)
-        # for upward pass
-        if new_node_created is False:
-            if successors.get(item) is not None:  # old node no need to update
-                del successors[item]
-        if new_node_created is True:  # need to set upward to set and establish link
-            successors[item] = [node, False]
-        # for this node update the information from the bottom
-        del_keys = []
-        for key in successors:
-            child = successors[key][0]
-            print(f"parent {sp_tree_node.node_id}, child {child.node_id} key {key} link_created{successors[key][1]}")
-            upward_verdict, link_created_verdict = self.create_links(parent=sp_tree_node, child=child, link_created=successors[key][1])
-            if upward_verdict is False:
-                del_keys.append(key)
-            successors[key][1] = link_created_verdict # True/False
-            if sp_tree_node.down_next_link_ptr.get(key) is not None:
-                print(sp_tree_node.node_id, key, sp_tree_node.down_next_link_ptr[key][0].node_id,
-                      sp_tree_node.down_next_link_ptr[key][1].node_id)
-                print(debug_obj.moves(sp_tree_node.down_next_link_ptr[key][0], sp_tree_node.down_next_link_ptr[key][1]))
-                """
-                print(sp_tree_node.node_id, key, sp_tree_node.down_next_link_ptr[key][0].item,
-                      sp_tree_node.down_next_link_ptr[key][1].item)
-                """
-        for key in del_keys:
-            del successors[key]
+    def get_next_link_nodes(self, node, item):
+        # get all the next link nodes with support
+        save = []
+        support = 0
+        if node.down_next_link_ptr is not None:
+            st = node.down_next_link_ptr[item][0]
+            en = node.down_next_link_ptr[item][1]
+            nxt = st
+            while True:
+                save.append(nxt)
+                support += nxt.count
+                if nxt == en:
+                    break
+                nxt = nxt.side_next_link_next
+        return save, support
+
+    def nextlink_gen_using_dfs(self, node):
+        # generating next links using bfs
+        _dict = {}
+        node.down_next_link_ptr = None
+        if node.child_link is not None:
+            for item in node.child_link:
+                for event_no in node.child_link[item]:
+                    child = node.child_link[item][event_no]
+                    self.nextlink_gen_using_dfs(child)
+                    if node.down_next_link_ptr is None:
+                        node.down_next_link_ptr = {}
+                    if node.down_next_link_ptr.get(child.item) is None:
+                        node.down_next_link_ptr[child.item] = [child, child]
+                    else:
+                        node.down_next_link_ptr[child.item][1].side_next_link_next = child
+                        child.side_next_link_prev = node.down_next_link_ptr[child.item][1]
+                        node.down_next_link_ptr[child.item][1] = child
+                    if child.down_next_link_ptr is None:
+                        continue
+                    for key in child.down_next_link_ptr:
+                        if key != child.item:
+                            if node.down_next_link_ptr.get(key) is None:
+                                node.down_next_link_ptr[key] = [child.down_next_link_ptr[key][0],
+                                                                child.down_next_link_ptr[key][1]]
+                            else:
+                                node.down_next_link_ptr[key][1].side_next_link_next = \
+                                    child.down_next_link_ptr[key][0]
+                                child.down_next_link_ptr[key][0].side_next_link_prev = node.down_next_link_ptr[key][1]
+                                node.down_next_link_ptr[key][1] = child.down_next_link_ptr[key][1]
         return

@@ -2,38 +2,42 @@ class DebugFunctions:
     def __int__(self):
         pass
 
-    def DebugPrintNextLink(self, node, down_nodes):
+    def DebugPrintNextLink(self, node, down_nodes, down_nodes_codes=None):
         # print next links
         down_nodes[node.node_id] = {}
-        save = []
+        if down_nodes_codes is not None:
+            down_nodes_codes[node.node_id] = {}
         if node.down_next_link_ptr is not None:
             for key in node.down_next_link_ptr:
                 down_nodes[node.node_id][key] = []
+                if down_nodes_codes is not  None:
+                    down_nodes_codes[node.node_id][key] = []
                 st = node.down_next_link_ptr[key][0]
                 en = node.down_next_link_ptr[key][1]
                 #print(st, en)
                 nxt = st
-                save.clear()
                 #print("started ")
                 while True:
-                    save.append(nxt.node_id)
                     down_nodes[node.node_id][key].append(nxt.node_id)
+                    down_nodes_codes[node.node_id][key].append(nxt.subtree_detection_code)
                     if (nxt == en):
                         break
                     nxt = nxt.side_next_link_next
         if node.child_link is not None:
             for item in node.child_link:
                 for event in node.child_link[item]:
-                    self.DebugPrintNextLink(node.child_link[item][event], down_nodes)
+                    self.DebugPrintNextLink(node.child_link[item][event], down_nodes, down_nodes_codes)
         return
 
     def sanity_test_next_links(self, node):
         down_nodes1 = {}
+        down_nodes_codes = {}
         self.bruteforce_nextlink_gen(node, down_nodes1)
         down_nodes2 = {}
-        self.DebugPrintNextLink(node, down_nodes2)
+        self.DebugPrintNextLink(node, down_nodes2, down_nodes_codes)
         print(down_nodes1)
         print(down_nodes2)
+        print(down_nodes_codes)
         for n1 in down_nodes1:
             assert(down_nodes2.get(n1) is not None)
             for it in down_nodes1[n1]:
@@ -77,3 +81,7 @@ class DebugFunctions:
             if st == None:
                 break
         return _list
+
+    def print_set_of_nodes(self, nodes):
+        for i in range(0, len(nodes)):
+            print(f"node={nodes[i].node_id}, support={nodes[i].count}")
