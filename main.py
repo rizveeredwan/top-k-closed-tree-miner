@@ -1,9 +1,15 @@
 import os
 
-from cspm_tree import CSPMTree, global_node_count
+from cspm_tree import CSPMTree, global_node_count, return_node_mapper
 from database import Database
 from debug_functions import DebugFunctions
 from mining_algorithm import MiningAlgorithm
+
+"""
+# Extension Convention 
+0: Sequence extension (SE)
+1: Itemset extension (IE)  
+"""
 
 
 class Main:
@@ -33,7 +39,9 @@ class Main:
         self.debug.sanity_test_next_links(self.cspm_tree_root)
 
     def clo_tree_miner(self, K):
-        self.mine.find_frequent_itemset(cspm_tree_root=self.cspm_tree_root, K=K)
+        NODE_MAPPER = return_node_mapper()
+        self.mine.find_frequent_itemset(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
+        print(NODE_MAPPER)
 
 
 if __name__ == '__main__':

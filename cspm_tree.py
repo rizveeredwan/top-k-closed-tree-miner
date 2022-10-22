@@ -11,6 +11,12 @@ NODE_MAPPER = {}
 TWO_POWERS = {} # 4: 2, 8: 3
 
 
+def return_node_mapper():
+    # return {1: node, 10: node, 100: node, .... }
+    global NODE_MAPPER
+    return NODE_MAPPER
+
+
 class CSPMTree:
     def __init__(self):
         self.node_id = 0  # each node will have a particular node number
@@ -29,7 +35,7 @@ class CSPMTree:
         self.down_next_link_ptr = None  # {a:st,end; b:st, en}
 
         # item freq attribute
-        self.item_freq = {}
+        self.item_freq = None
 
         #subtree detection
         self.subtree_detection_code = ""
@@ -51,9 +57,7 @@ class CSPMTree:
         parent_node.num_child += 1
         node.subtree_detection_code = parent_node.subtree_detection_code + str(parent_node.num_child)
         # storing the node
-        NODE_MAPPER[global_node_count] = node
-        # Two power
-        TWO_POWERS[1 << global_node_count] = node
+        NODE_MAPPER[1 << global_node_count] = node
         return node
 
     def insert(self, sp_tree_node, processed_sequence, event_no, item_no, event_bitset):

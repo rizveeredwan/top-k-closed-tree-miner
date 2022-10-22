@@ -54,7 +54,7 @@ def create_links(self, parent, child, link_created=False):
         if event_no >= len(processed_sequence):
             return
         if item_no >= len(processed_sequence[event_no]):
-            self.insert(sp_tree_node, processed_sequence, event_no + 1, 0, 0)
+            self.insert(sp_tree_node, processed_sequence, event_no + 1, 0)
             return
         item = processed_sequence[event_no][item_no]
         if sp_tree_node.child_link is None:
@@ -68,8 +68,7 @@ def create_links(self, parent, child, link_created=False):
                                                   parent_item_bitset=event_bitset, count=1)
             sp_tree_node.child_link[item][event_no] = node
             new_node_created = True
-        self.insert(sp_tree_node=node, processed_sequence=processed_sequence, event_no=event_no, item_no=item_no + 1,
-                    event_bitset=event_bitset | (1 << item))
+        self.insert(,
         """
         # for upward pass
         if new_node_created is False:
