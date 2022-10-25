@@ -63,6 +63,12 @@ class PatternExtensionLinkedList:
                 self.insert(node=ll_node, prev_node=current_node)
                 current_node = ll_node
             ll_nodes.append(current_node)  # newly created linked list nodes
+        if len(updated_cspm_tree_nodes) == 0:
+            if old_linked_list_node.next_link is not None: #(a b c) -> (a c)
+                old_linked_list_node.prev_link.next_link = old_linked_list_node.next_link
+                old_linked_list_node.next_link.prev_link = old_linked_list_node.prev_link
+            elif old_linked_list_node.next_link is None: # (a b) -> (a)
+                old_linked_list_node.prev_link.next_link = None
         del old_linked_list_node
         return ll_nodes
 
@@ -97,15 +103,20 @@ class ClosedPatternsLinkedList:  # closed1->closed2->...
         # deleting current node
         if current.next is not None:
             current.prev.next = current.next
+            current.next.prev = current.prev
+        elif current.next is None: # last node deletion
+            assert(current.prev is not None)
+            current.prev.next = None
         del current
 
     def print(self):
         # traversing from bottom to the main node
-        print("printing the cosed nodes")
+        print("printing the closed nodes")
         st = self
         while st is not None:
             print(st.pattern)
             st = st.next
+        print("DONE")
         return
 
 
@@ -141,6 +152,10 @@ class CandidatePatternLinkedListNode:
         # this function is not used still
         if node.prev is not None and node.next is not None:
             node.prev.next = node.next
+            node.next.prev = node.prev
+        elif node.next is None:
+            assert(node.prev is not None)
+            node.prev.next = None
         del node
         return
 

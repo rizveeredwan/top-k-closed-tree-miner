@@ -86,5 +86,6 @@ class DebugFunctions:
         for i in range(0, len(nodes)):
             print(f"node={nodes[i].node_id}, support={nodes[i].count} label={nodes[i].item}")
 
-    def print_support_min_heap(self):
-        pass
+    def print_ll_nodes_pattern(self, list_off_ll_nodes):
+        for i in range(0, len(list_off_ll_nodes)):
+            print(list_off_ll_nodes[i].pattern)
