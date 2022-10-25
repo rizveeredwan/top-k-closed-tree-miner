@@ -93,3 +93,20 @@ def create_links(self, parent, child, link_created=False):
             del successors[key]
         """
         return
+
+
+    def simulatenous_pattern_extension(self, pattern, support, base_cspm_tree_node, s_ex, i_ex):
+        # will make simulatenous pattern extension for (a)(b), (ab), (a)(c), (ac)
+        last_event_bitset = find_last_item_bitset(pattern=pattern)
+        _dict = {0:{}, 1:{}} # 0:SE, 1:IE
+        pq = []
+        for i in range(0, len(s_ex)):
+            _dict[0][s_ex[i]] = SimultaneousPatternExtensionMaxHeap(support=support, item=s_ex[i], ex_type=0, cspm_tree_nodes=base_cspm_tree_node)
+            heapq.heappush(pq, _dict[0][s_ex[i]])
+        for i in range(0, len(i_ex)):
+            _dict[1][i_ex[i]] = SimultaneousPatternExtensionMaxHeap(support=support, item=i_ex[i], ex_type=0,
+                                                                    cspm_tree_nodes=base_cspm_tree_node)
+            heapq.heappush(pq, _dict[1][i_ex[i]])
+        while len(pq) > 0:
+            u = pq[0] # maximum support node to be extended
+            heapq.heappop(pq)

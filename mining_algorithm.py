@@ -3,6 +3,7 @@ from collections import deque
 
 from debug_functions import DebugFunctions
 from data_structure import *
+from pattern_quality_measure import *
 
 debug = DebugFunctions()
 
@@ -16,62 +17,78 @@ def generate_bitset_from_nodeids(cspm_tree_nodes):
         value = value | (1 << cspm_tree_nodes[i].node_id)
     return value
 
+
+def find_last_item_bitset(pattern):
+    p = pattern[-1]
+    value = 0
+    for i in range(0, len(p)):
+        value = value | (1 << p[i])
+    return value
+
+
 class MiningAlgorithm:
     def __init__(self):
-        self.support_table = {} # support: { patterns that are closed, candidate node in Caphe,  presence in min heap}
+        self.support_table = {}  # support: { patterns that are closed, candidate node in Caphe,  presence in min heap}
 
         self.support_min_heap = []
 
-        #CaPHe data structure
+        # CaPHe data structure
         self.caphe = Caphe()
 
-
-    def pattern_extension(self, cspm_tree_nodes, item, min_sup_threshold, type_of_extension, last_event_bitset=None):
+    def pattern_extension(self, cspm_tree_nodes, item, minsup, type_of_extension, last_event_bitset=None):
         queue = deque([])
         current_support = 0
-        final_list_head = PatternExtensionLinkedList(None,-1)
+        final_list_head = PatternExtensionLinkedList(None, -1)
         current = final_list_head
         for i in range(0, len(cspm_tree_nodes)):
-            n = PatternExtensionLinkedList(node=cspm_tree_nodes, level=0)
-            current.insert(node=n)
+            n = PatternExtensionLinkedList(node=cspm_tree_nodes[i], level=0)
+            current.insert(node=n, prev_node=current)
             current = n
-            queue.append(n) # [node, level, base node number for which searching the solution]
+            queue.append(n)  # [node, level, base node number for which searching the solution]
             current_support += cspm_tree_nodes[i].count
+        heuristic_support = current_support  # heuristic support for heuristic pruning
         while len(queue) > 0:
             n = queue.popleft()
             cspm_tree_node = n.node
-            current_support -= n.node.count # cspm_tree_support reduction
+            current_support -= n.node.count  # cspm_tree_support reduction
+            if n.level == 0:  # For heuristic calculation
+                heuristic_support -= n.node.count
             down_nodes, down_support = n.node.get_next_link_nodes(node=n.node, item=item)
-            if current_support + down_support < min_sup_threshold:
-                return None # no node, no possible extension
+            # print(f"current_support {current_support} down_support {down_support} {minsup} {down_nodes}")
+            if current_support + down_support < minsup:
+                heuristic_support = heuristic_support + down_support
+                return None, heuristic_support, current_support  # no node, no possible extension
             ll_nodes = final_list_head.replace(old_linked_list_node=n, updated_cspm_tree_nodes=down_nodes)
             for i in range(0, len(ll_nodes)):
-                if type_of_extension == 0: # SE
-                    if ll_nodes[i].level == 1: # First level
-                        if ll_nodes[i].node.event_no > cspm_tree_node.event_no: # condition matched
-                            continue
-                        else: # in the same event, need to go forward
-                            queue.append(ll_nodes[i])
-                    else: # others
-                        queue.append(ll_nodes[i])   # keeping the nodes here
-                elif type_of_extension == 1: # IE
-                    assert(last_event_bitset is not None)
+                current_support += ll_nodes[i].node.count
+                if type_of_extension == 0:  # SE
                     if ll_nodes[i].level == 1:  # First level
-                        if ll_nodes[i].node.event_no == cspm_tree_node.event_no: # condition matched
+                        heuristic_support += ll_nodes[i].node.count  # updating heuristic for level 1
+                        if ll_nodes[i].node.event_no > cspm_tree_node.event_no:  # condition matched
                             continue
-                        else: # not in the same event, need to go forward
+                        else:  # in the same event, need to go forward
+                            queue.append(ll_nodes[i])
+                elif type_of_extension == 1:  # IE
+                    assert (last_event_bitset is not None)
+                    if ll_nodes[i].level == 1:  # First level
+                        heuristic_support += ll_nodes[i].node.count  # updating heuristic for level 1
+                        if ll_nodes[i].node.event_no == cspm_tree_node.event_no:  # condition matched
+                            continue
+                        else:  # not in the same event, need to go forward
                             queue.append(ll_nodes[i])
                     else:
                         if (ll_nodes[i].node.parent_item_bitset & last_event_bitset) == last_event_bitset:
-                            continue # condition matched
+                            continue  # condition matched
                         else:  # all the desired items not found in the same event
                             queue.append(ll_nodes[i])
+            if n.level == 0:
+                print(f"heuristic support {heuristic_support}")
         current = final_list_head.next_link
         extended = []
         while current is not None:
             extended.append(current.node)
             current = current.next_link
-        return extended
+        return extended, heuristic_support, current_support
 
     def create_key_support_table(self, support):
         # creating entry in the support table for the first time
@@ -84,57 +101,89 @@ class MiningAlgorithm:
         return
 
     def new_candidate_pattern_addition(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex):
-        assert(self.support_table.get(support) is not None)
+        assert (self.support_table.get(support) is not None)
         pass
-    def new_closed_pattern_addition(self, pattern, support):
-        pass
+
     def delete_whole_entry_from_support_table(self, support):
         # all the information deletion from the support table
         # delete from min heap
-        heapq.heappop(self.support_min_heap) # O(logn)
+        heapq.heappop(self.support_min_heap)  # O(logn)
         # delete from caphe, caphe_node
         caphe_node = self.support_table[support].caphe_node
-        self.caphe.pop(special_node=caphe_node) # O(logn)
+        self.caphe.pop(special_node=caphe_node)  # O(logn)
         del caphe_node
         # delete closed pattern linked list
         if self.support_table[support].closed_patterns is not None:
             del self.support_table[support].closed_patterns
         del self.support_table[support]
 
-    def patterns_candidacy_check(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset):
-        # a pattern that need to be a candidate or not, that verdict
-        return True,None # True: Can be candidate, None: Can be closed still
+    def patterns_quality_check(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, NODE_MAPPER):
+        candidacy_flag, closed_flag = True, None
+        # a pattern that need to be a candidate or not, that verdict along with closedness
+        if self.support_table.get(support) is not None:
+            # checking with closed patterns
+            L1, L2 = closure_check(linked_list_nodes=self.support_table[support].closed_patterns, p=pattern)
+            if len(L1) > 0 and len(L2) > 0:
+                problem = 1
+                print("Closed Pattern cross presence ", pattern)
+                self.support_table[support].closed_patterns.print()
+                assert (problem == 0)
+            elif len(L1) > 0:
+                assert (len(L1) == 1)  # in this case there should be only one that is enclosing
+                closed_flag = 0  # can never be closed
+                # absorption test
+                absorption_status = absorption_check(list_of_ll_nodes=L1, nodes_of_p=cspm_tree_nodes, flag=0,
+                                                     NODE_MAPPER=NODE_MAPPER)
+                assert (len(absorption_status) == len(L1))
+                if absorption_status[0]:
+                    candidacy_flag = False
+            elif len(L2) > 0:  # P has absorbed some
+                # remove those closed patterns
+                for i in range(0, len(L2)):
+                    self.support_table[support].closed_patterns.delete(current=L2[i])
+                # check in candidate patterns
+                L1, L2 = closure_check(linked_list_nodes=self.support_table[support].closed_patterns, p=pattern)
+                absorption_list = absorption_check(list_of_ll_nodes=L2, nodes_of_p=cspm_tree_nodes, flag=1,
+                                                   NODE_MAPPER=NODE_MAPPER)
+        # True/False: Can be/csn not be candidate, None/0: Can be/can never be closed still
+        return candidacy_flag, closed_flag
 
-    def decision_for_each_pattern(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, K):
+    def decision_for_each_pattern(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, K,
+                                  NODE_MAPPER):
         # For each pattern the workflow of the decision, where to put, what to set, what to delete
+        # print(f"{pattern}, support {support}")
         if len(self.support_table) < K:
             # we still have not received the most frequent top K elements
             if self.support_table.get(support) is None:  # this support does not exist
                 # Dictionary entry creation
-                self.create_key_support_table(support=support) # dictionary entry, min heap, caphe node
+                self.create_key_support_table(support=support)  # dictionary entry, min heap, caphe node
             # candidate pattern detection and insertion
-            candidacy_verdict, closed_possible_flag = self.patterns_candidacy_check(pattern, support, cspm_tree_nodes, cspm_tree_node_bitset)
-            if candidacy_verdict is True: # this has to be inserted as a candidate
+            candidacy_verdict, closed_possible_flag = self.patterns_quality_check(pattern, support, cspm_tree_nodes,
+                                                                                  cspm_tree_node_bitset, NODE_MAPPER)
+            if candidacy_verdict is True:  # this has to be inserted as a candidate
                 # insert pattern as a candidate in the corresponding caphe node
                 caphe_node = self.support_table[support].caphe_node
-                assert(caphe_node is not None)
+                assert (caphe_node is not None)
                 caphe_node.insert_pattern(caphe_node=caphe_node, pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
-                                          cspm_tree_node_bitset=cspm_tree_node_bitset, s_ex=s_ex, i_ex=i_ex, flag=closed_possible_flag)
+                                          cspm_tree_node_bitset=cspm_tree_node_bitset, s_ex=s_ex, i_ex=i_ex,
+                                          flag=closed_possible_flag)
         elif len(self.support_table) == K:
             # the quota already filled up of k unique patterns, might need to delete some
-            if self.support_min_heap[0] > support: # no upate required, already have best K values
-                assert(self.support_table.get(support) is not None)
+            if self.support_min_heap[0].priority > support:  # no upate required, already have best K values
+                assert (self.support_table.get(support) is None)
                 return
-            elif self.support_min_heap[0] < support and self.support_table.get(support) is None: # the minimum one have less support delete this , insert new
+            elif self.support_min_heap[0].priority < support and self.support_table.get(
+                    support) is None:  # the minimum one have less support delete this , insert new
                 # this support should not be in the table
                 self.delete_whole_entry_from_support_table(support=support)
                 # insert new support
                 # Dictionary entry creation
                 self.create_key_support_table(support=support)  # dictionary entry, min heap, caphe node
                 # candidate pattern detection and insertion
-                candidacy_verdict, closed_possible_flag = self.patterns_candidacy_check(pattern=pattern, support=support,
-                                                                                        cspm_tree_nodes=cspm_tree_nodes,
-                                                                                        cspm_tree_node_bitset=cspm_tree_node_bitset)
+                candidacy_verdict, closed_possible_flag = self.patterns_quality_check(pattern=pattern, support=support,
+                                                                                      cspm_tree_nodes=cspm_tree_nodes,
+                                                                                      cspm_tree_node_bitset=cspm_tree_node_bitset,
+                                                                                      NODE_MAPPER=NODE_MAPPER)
                 if candidacy_verdict is True:  # this has to be inserted as a candidate
                     # insert pattern as a candidate in the corresponding caphe node
                     caphe_node = self.support_table[support].caphe_node
@@ -143,13 +192,14 @@ class MiningAlgorithm:
                                               cspm_tree_node_bitset=cspm_tree_node_bitset, s_ex=s_ex, i_ex=i_ex,
                                               flag=closed_possible_flag)
 
-            elif self.support_min_heap[0] < support and self.support_table.get(support) is not None: # the minimum one have less support delete this , insert new
+            elif self.support_min_heap[0].priority <= support and self.support_table.get(
+                    support) is not None:  # the minimum one have less support delete this , insert new
                 # this support is already in the table
                 # candidate pattern detection and insertion
-                candidacy_verdict, closed_possible_flag = self.patterns_candidacy_check(pattern=pattern,
-                                                                                        support=support,
-                                                                                        cspm_tree_nodes=cspm_tree_nodes,
-                                                                                        cspm_tree_node_bitset=cspm_tree_node_bitset)
+                candidacy_verdict, closed_possible_flag = self.patterns_quality_check(pattern=pattern, support=support,
+                                                                                      cspm_tree_nodes=cspm_tree_nodes,
+                                                                                      cspm_tree_node_bitset=cspm_tree_node_bitset,
+                                                                                      NODE_MAPPER=NODE_MAPPER)
                 if candidacy_verdict is True:  # this has to be inserted as a candidate
                     # insert pattern as a candidate in the corresponding caphe node
                     caphe_node = self.support_table[support].caphe_node
@@ -158,8 +208,23 @@ class MiningAlgorithm:
                                               cspm_tree_node_bitset=cspm_tree_node_bitset, s_ex=s_ex, i_ex=i_ex,
                                               flag=closed_possible_flag)
 
+    def find_i_ex(self, _list, pattern):
+        # finding all the items that might extend it as the itemset extension
+        last_item = pattern[-1][-1]
+        i_ex = []
+        for i in range(0, len(_list)):
+            if _list[i][0] > last_item:
+                i_ex.append(_list[i][0])
+        return i_ex
+
+    def remove_caphe_node_from_ds(self, support, caphe_node):
+        # both nodes should match
+        assert (caphe_node == self.caphe.front())
+        self.caphe.pop(special_node=None)  # deleting the current best
+        self.support_table[support].caphe_node = None  # no more caphe node for this support
+
     def find_frequent_itemset(self, cspm_tree_root, K=2, NODE_MAPPER=None):
-        minsup = 1 # starting min sup
+        minsup = 1  # starting min sup
         # Find frequent 1 itemset
         list_of_items = []
         if cspm_tree_root.down_next_link_ptr is not None:
@@ -170,15 +235,81 @@ class MiningAlgorithm:
                 # print(f"item = {item}, support = {support}")
                 # debug.print_set_of_nodes(nodes=next_link_nodes)
                 list_of_items.append([item, support, next_link_nodes])
+        # sorting and setting the min sup
+        list_of_items.sort(key=lambda x: x[1], reverse=True)
+        cnt = 1
+        last_idx = len(list_of_items) - 1
+        for i in range(1, len(list_of_items)):
+            if list_of_items[i][1] != list_of_items[i - 1][1]:
+                if cnt < K:
+                    cnt += 1
+                elif cnt == K:
+                    last_idx = i - 1
+                    break
+        list_of_items = list_of_items[0:last_idx + 1]  # pruning a portion
+        s_ex = []
         for i in range(0, len(list_of_items)):
-            pattern = [[list_of_items[i][0]]] # [[a]]
+            s_ex.append(list_of_items[i][0])
+        # single list of items
+        for i in range(0, len(list_of_items)):
+            pattern = [[list_of_items[i][0]]]  # [[a]]
             support = list_of_items[i][1]
             cspm_tree_nodes = list_of_items[i][2]
+            i_ex = self.find_i_ex(_list=list_of_items, pattern=pattern)
+            self.decision_for_each_pattern(pattern=pattern, support=support, cspm_tree_nodes=cspm_tree_nodes,
+                                           cspm_tree_node_bitset=None, s_ex=s_ex, i_ex=i_ex, K=K,
+                                           NODE_MAPPER=NODE_MAPPER)
+
+        print(len(self.caphe.nodes))
+        self.caphe.print()
+        while len(self.caphe.nodes) > 0:
+            # Front element from caphe
+            caphe_node = self.caphe.front()
+            print(caphe_node.support)
+            # print(caphe_node.print_caphe_node())
+            output = caphe_node.pop_last_element(caphe_node, NODE_MAPPER=NODE_MAPPER)
+            if output is None:  # all the patterns have been checked
+                v = len(self.caphe.nodes)
+                self.remove_caphe_node_from_ds(support=caphe_node.support, caphe_node=caphe_node)
+                assert (len(self.caphe.nodes) == v - 1)
+            else:  # some patterns still exist
+                pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag = output
+                support = caphe_node.support
+                # if no one has canceled this pattern's closedness, identify it as close
+                if flag is None:  # this pattern can be closed (0 means not closed), update that information
+                    self.support_table[support].closed_patterns.insert(current=self.support_table[support].closed_patterns,
+                                                                    pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
+                                                                    cspm_tree_node_bitset=cspm_tree_node_bitset)
+                # checking the extensions, pattern extensions that support min support/minsup
+                if len(self.support_min_heap) == K:  # setting up min heap
+                    minsup = self.support_min_heap[0].priority
+                else:
+                    minsup = 1
+                print(f"pattern {pattern} support {caphe_node.support}")
+                last_event_bitset = find_last_item_bitset(pattern=pattern)
+                heuristic = {}
+                for i in range(0, len(s_ex)):
+                    extended, heuristic_support, ext_support = self.pattern_extension(cspm_tree_nodes=cspm_tree_nodes,
+                                                                                      item=s_ex[i], minsup=minsup,
+                                                                                      type_of_extension=0,
+                                                                                      last_event_bitset=last_event_bitset)
+                    heuristic[s_ex[i]] = heuristic_support
+                    if extended is not None:  # did not fail minsup
+                        print("extension ", extended, heuristic_support, ext_support, pattern, s_ex[i])
+                for i in range(0, len(i_ex)):
+                    if heuristic.get(i_ex[i]) is not None:
+                        if heuristic[i_ex[i]] < minsup:  # applying heuristic support
+                            continue
+                    extended, heuristic_support, ext_support = self.pattern_extension(cspm_tree_nodes=cspm_tree_nodes,
+                                                                                      item=i_ex[i], minsup=minsup,
+                                                                                      type_of_extension=1,
+                                                                                      last_event_bitset=last_event_bitset)
+                    if extended is not None:  # did not fail minsup
+                        print("extension ", extended, heuristic_support, ext_support, pattern, s_ex[i])
+
+        print(f"minsup = {minsup}")
+        print("DONE")
 
 
 if __name__ == '__main__':
     pass
-
-
-
-

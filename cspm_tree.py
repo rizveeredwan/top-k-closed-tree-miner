@@ -74,12 +74,11 @@ class CSPMTree:
         if sp_tree_node.child_link.get(item) is None:
             sp_tree_node.child_link[item] = {}
         node = sp_tree_node.child_link[item].get(event_no)  # 0 based, event_no
-        new_node_created = False
         if node is None:
             node = self.initializing_sp_tree_node(item=item, event_no=event_no, parent_node=sp_tree_node,
-                                                  parent_item_bitset=event_bitset, count=1)
+                                                  parent_item_bitset=event_bitset, count=0)
             sp_tree_node.child_link[item][event_no] = node
-            new_node_created = True
+        node.count += 1
         self.insert(sp_tree_node=node, processed_sequence=processed_sequence, event_no=event_no, item_no=item_no + 1,
                     event_bitset=event_bitset | (1 << item))
         return
@@ -88,7 +87,7 @@ class CSPMTree:
         # get all the next link nodes with support
         save = []
         support = 0
-        if node.down_next_link_ptr is not None:
+        if node.down_next_link_ptr is not None and node.down_next_link_ptr.get(item) is not None:
             st = node.down_next_link_ptr[item][0]
             en = node.down_next_link_ptr[item][1]
             nxt = st

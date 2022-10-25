@@ -36,16 +36,16 @@ class Main:
             print(global_node_count)
         self.cspm_tree_root.nextlink_gen_using_dfs(self.cspm_tree_root)
         # debug
-        self.debug.sanity_test_next_links(self.cspm_tree_root)
+        # self.debug.sanity_test_next_links(self.cspm_tree_root)
 
     def clo_tree_miner(self, K):
         NODE_MAPPER = return_node_mapper()
         self.mine.find_frequent_itemset(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
-        print(NODE_MAPPER)
+        # print(NODE_MAPPER)
 
 
 if __name__ == '__main__':
     obj = Main()
-    obj.read(file_name=os.path.join('.', 'dataset', 'next_link_test_dataset2.txt'))
+    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset1.txt'))
     obj.clo_tree_miner(K=2)
 
