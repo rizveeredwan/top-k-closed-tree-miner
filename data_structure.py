@@ -64,12 +64,15 @@ class PatternExtensionLinkedList:
                 current_node = ll_node
             ll_nodes.append(current_node)  # newly created linked list nodes
         if len(updated_cspm_tree_nodes) == 0:
+            assert(old_linked_list_node is not None)
             if old_linked_list_node.next_link is not None: #(a b c) -> (a c)
                 old_linked_list_node.prev_link.next_link = old_linked_list_node.next_link
                 old_linked_list_node.next_link.prev_link = old_linked_list_node.prev_link
             elif old_linked_list_node.next_link is None: # (a b) -> (a)
                 old_linked_list_node.prev_link.next_link = None
-        del old_linked_list_node
+            old_linked_list_node.prev_link = None
+            old_linked_list_node.next_link = None
+            del old_linked_list_node
         return ll_nodes
 
 
@@ -107,7 +110,10 @@ class ClosedPatternsLinkedList:  # closed1->closed2->...
         elif current.next is None: # last node deletion
             assert(current.prev is not None)
             current.prev.next = None
+        current.prev = None
+        current.next = None
         del current
+
 
     def print(self):
         # traversing from bottom to the main node
@@ -156,6 +162,8 @@ class CandidatePatternLinkedListNode:
         elif node.next is None:
             assert(node.prev is not None)
             node.prev.next = None
+        node.prev = None
+        node.next = None
         del node
         return
 
@@ -202,9 +210,20 @@ class CapheNode:
         assert (caphe_node is not None)
         if caphe_node.pattern_ll_node[0] != caphe_node.pattern_ll_node[1]:
             # some patterns in the bucket
+            pattern_ll_node = caphe_node.pattern_ll_node[0].next
+            if pattern_ll_node.next is None:
+                # reached last node
+                caphe_node.pattern_ll_node[1] = caphe_node.pattern_ll_node[0]
+            else:
+                # None -> a->b : None->b
+                pattern_ll_node.prev.next = pattern_ll_node.next
+                pattern_ll_node.next.prev = pattern_ll_node.prev
+
+            """
             pattern_ll_node = caphe_node.pattern_ll_node[1]
             caphe_node.pattern_ll_node[1].prev.next = None
             caphe_node.pattern_ll_node[1] = pattern_ll_node.prev
+            """
 
             pattern = pattern_ll_node.pattern
             cspm_tree_nodes = pattern_ll_node.extract_cspm_tree_nodes(linked_list_node=pattern_ll_node,
@@ -213,6 +232,9 @@ class CapheNode:
             s_ex = pattern_ll_node.s_ex
             i_ex = pattern_ll_node.i_ex
             flag = pattern_ll_node.flag
+            # before deletion
+            pattern_ll_node.prev = None
+            pattern_ll_node.next = None
             del pattern_ll_node
             return pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag
         else:  # no pattern in the bucket

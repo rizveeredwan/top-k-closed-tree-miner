@@ -135,31 +135,13 @@ class MiningAlgorithm:
                 assert (len(absorption_status) == len(L1))
                 if absorption_status[0] is True:
                     candidacy_flag = False
-                if candidacy_flag is False: # need to check into candidates
-                    # check in candidate patterns
-                    L1, L2 = closure_check(linked_list_nodes=self.support_table[support].caphe_node.pattern_ll_node[1],
-                                           p=pattern)
-                    if len(L1) > 0:
-                        closed_flag = 0  # P can never be closed pattern
-                        # *******can add faster return flag in absorption_status calculation
-                        absorption_status = absorption_check(list_of_ll_nodes=L1, nodes_of_p=cspm_tree_nodes, flag=0,
-                                                             NODE_MAPPER=NODE_MAPPER)
-                        for i in range(0, len(absorption_status)):  # x in L1 encloses P
-                            # x in L1 encloses and absorbs P, P is no more needed as candidate,
-                            if absorption_status[i] is True:
-                                candidacy_flag = False
-                                break
-                    if len(L2) > 0:
-                        absorption_status = absorption_check(list_of_ll_nodes=L2, nodes_of_p=cspm_tree_nodes, flag=1,
-                                                             NODE_MAPPER=NODE_MAPPER)
-                        for i in range(0, len(absorption_status)):
-                            if absorption_status[i] is True:
-                                # this candidate is not needed any more, as absorbed
-                                self.support_table[support].caphe_node.pattern_ll_node[1].delete_node(node=L2[i])
             elif len(L2) > 0:  # P has absorbed some
                 # remove those closed patterns
                 for i in range(0, len(L2)):
                     self.support_table[support].closed_patterns.delete(current=L2[i])
+            if candidacy_flag is False:
+                # currently, there is no pattern in the closed, that absorbs P
+                # search in intermediates
                 # check in candidate patterns
                 L1, L2 = closure_check(linked_list_nodes=self.support_table[support].caphe_node.pattern_ll_node[1], p=pattern)
                 if len(L1) > 0:
