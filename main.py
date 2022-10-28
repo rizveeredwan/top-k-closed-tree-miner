@@ -38,14 +38,20 @@ class Main:
         # debug
         # self.debug.sanity_test_next_links(self.cspm_tree_root)
 
+    def print_closed_patterns(self):
+        for key in self.mine.support_table:
+            print(f"support = {key}")
+            self.mine.support_table[key].closed_patterns.print()
+
     def clo_tree_miner(self, K):
         NODE_MAPPER = return_node_mapper()
         self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
+        self.print_closed_patterns()
         # print(NODE_MAPPER)
 
 
 if __name__ == '__main__':
     obj = Main()
-    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset1.txt'))
+    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset2.txt'))
     obj.clo_tree_miner(K=2)
 

@@ -100,7 +100,6 @@ def absorption_check(list_of_ll_nodes, nodes_of_p, flag, NODE_MAPPER=None, fast_
         elif list_of_ll_nodes[i].cspm_tree_node_bitset is not None:
             cspm_tree_nodes = generate_cspm_tree_nodes_from_bitset(
                 cspm_tree_node_bitset=list_of_ll_nodes[i].cspm_tree_node_bitset,NODE_MAPPER=NODE_MAPPER)
-        print("pattern ", list_of_ll_nodes[i].pattern, flag)
         if flag == 0:
             verdict = two_pattern_absorption_check(nodes_of_A=cspm_tree_nodes, nodes_of_B=nodes_of_p)
         elif flag == 1:

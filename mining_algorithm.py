@@ -325,12 +325,12 @@ class KCloTreeMiner:
     def apply_cmap_based_pruning(self, CMAP, pattern, type_of_extension, item):
         for i in range(0, len(pattern[-1])):
             if (CMAP[type_of_extension].get(pattern[-1][i])) is None:
-                return False
+                continue # for example [1,2] is being calculated but no entry for [2], can't take decision
             if CMAP[type_of_extension][pattern[-1][i]].get(
                     item) is None:  # This item was never extended as sex, super pattern will not be there
                 return False
             if self.support_table.get(CMAP[type_of_extension][pattern[-1][i]][item]) is None:
-                # this support does not exist any more
+                # this support does not exist anymore
                 return False
         return True  # True: We can try to do the extension, False: We can not try to do the extension
 
@@ -395,6 +395,7 @@ class KCloTreeMiner:
                         cspm_tree_node_bitset=cspm_tree_node_bitset)
                 # checking the extensions, pattern extensions that support min support/minsup
                 print(f"pattern {pattern} support {caphe_node.support} closed_flag {flag}")
+                print(f"pattern={pattern} s_ex={s_ex} i_ex={i_ex}")
                 last_event_bitset = find_last_item_bitset(pattern=pattern)
                 heuristic = {}
                 s_ex_candidate_ll_nodes, i_ex_candidate_ll_nodes = [], []  # storing the candidate ll nodes here of caphe node, so that we can update
@@ -414,16 +415,18 @@ class KCloTreeMiner:
                                                                                       item=s_ex[i], minsup=minsup,
                                                                                       type_of_extension=0,
                                                                                       last_event_bitset=last_event_bitset)
-                    print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
                     heuristic[s_ex[i]] = heuristic_support
+                    # print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup} heuristic_support={heuristic[s_ex[i]]}")
                     if extended is not None:  # did not fail minsup, try to add it in the Caphe
                         assert (ext_support >= minsup)  # must beat this support at least
                         f_sex.append(s_ex[i])  # sequence extended symbol
                         supp_s_ex.append(ext_support)  # saving the support
-                        if len(pattern) == 1 and len(pattern[0]) == 1:  # calculate CMPA_{S}
-                            if CMAP[0].get(pattern[0][0]) is None:
-                                CMAP[0][pattern[0][0]] = {}
-                            CMAP[0][pattern[0][0]][s_ex[i]] = ext_support  # {0: {a}{b}:10 }
+                        # e.g. [1][2] came but [2] was not calculated, it was absorbed
+                        # First occurrence for pattern[-1][-1]
+                        if CMAP[0].get(pattern[-1][-1]) is None:
+                            CMAP[0][pattern[-1][-1]] = {}
+                        if CMAP[0][pattern[-1][-1]].get(s_ex[i]) is None:
+                            CMAP[0][pattern[-1][-1]][s_ex[i]] = ext_support
 
                         # extended patterns will be pushed
                         candidate_node_ref = self.decision_for_each_pattern(pattern=sup_pattern, support=ext_support,
@@ -441,6 +444,9 @@ class KCloTreeMiner:
                     if (len(pattern) == 1 and len(pattern[0]) == 1) is False:  # will try to apply pruning
                         verdict = self.apply_cmap_based_pruning(CMAP=CMAP, pattern=pattern,
                                                                 type_of_extension=1, item=i_ex[i])
+                        # debug
+                        if str(pattern) == str([[1, 2]]) and i_ex[i] == 6:
+                            print(f"verdict = {verdict}")
                         if verdict is False:  # E.g. (ac) was not there (abc) can not occur
                             continue
                     minsup = self.return_current_possible_minsup(K)
@@ -449,15 +455,17 @@ class KCloTreeMiner:
                                                                                       item=i_ex[i], minsup=minsup,
                                                                                       type_of_extension=1,
                                                                                       last_event_bitset=last_event_bitset)
-                    print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
+                    # print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
                     if extended is not None:  # did not fail minsup, try to add it in the Caphe
                         assert (ext_support >= minsup)  # must beat this support at least
                         f_iex.append(i_ex[i])  # itemset extended symbol
                         supp_i_ex.append(ext_support)  # support during itemset extension
-                        if len(pattern) == 1 and len(pattern[0]) == 1:  # calculate CMPA_{S}
-                            if CMAP[1].get(pattern[0][0]) is None:
-                                CMAP[1][pattern[0][0]] = {}
-                            CMAP[1][pattern[0][0]][i_ex[i]] = ext_support  # {0: {ab}:10 }
+                        # e.g. [1][2] came but [2] was not calculated,
+                        # it was absorbed, along with generic one's (1st time)
+                        if CMAP[1].get(pattern[-1][-1]) is None:
+                            CMAP[1][pattern[-1][-1]] = {}
+                        if CMAP[1][pattern[-1][-1]].get(i_ex[i]) is None:
+                            CMAP[1][pattern[-1][-1]][i_ex[i]] = ext_support
                         # extended patterns will be pushed
                         candidate_node_ref = self.decision_for_each_pattern(pattern=sup_pattern, support=ext_support,
                                                                             cspm_tree_nodes=extended,

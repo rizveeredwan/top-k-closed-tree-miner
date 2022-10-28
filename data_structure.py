@@ -193,9 +193,9 @@ class CapheNode:
     def insert_pattern(self, caphe_node, pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag=None):
         # adding patterns as ll list, new pattern to explore
         # adding after end
-        # print("caphe ", caphe_node, pattern)
-        # print("before ")
-        # caphe_node.print_caphe_node()
+        if caphe_node.pattern_ll_node[0].next is None:
+            # candidates have been removed
+            caphe_node.pattern_ll_node[1] = caphe_node.pattern_ll_node[0]
         current = caphe_node.pattern_ll_node[1]
         pattern_ll_node = current.create_node(pattern=pattern, cspm_tree_node_bitset=cspm_tree_node_bitset,
                                               cspm_tree_nodes=cspm_tree_nodes, current=current, s_ex=s_ex, i_ex=i_ex,
@@ -208,6 +208,10 @@ class CapheNode:
     def pop_last_element(self, caphe_node,
                          NODE_MAPPER=None):  # extracting the last pattern and its information from a node
         assert (caphe_node is not None)
+        # sanity code
+        if caphe_node.pattern_ll_node[0].next is None:
+            # somehow all the candidates has been deleted, fixing the starting and ending pointer
+            caphe_node.pattern_ll_node[1] = caphe_node.pattern_ll_node[0]
         if caphe_node.pattern_ll_node[0] != caphe_node.pattern_ll_node[1]:
             # some patterns in the bucket
             pattern_ll_node = caphe_node.pattern_ll_node[0].next
