@@ -3,7 +3,7 @@ import os
 from cspm_tree import CSPMTree, global_node_count, return_node_mapper
 from database import Database
 from debug_functions import DebugFunctions
-from mining_algorithm import MiningAlgorithm
+from mining_algorithm import KCloTreeMiner
 
 """
 # Extension Convention 
@@ -16,7 +16,7 @@ class Main:
     def __init__(self):
         self.cspm_tree_root = CSPMTree()
         self.debug = DebugFunctions()
-        self.mine = MiningAlgorithm()
+        self.mine = KCloTreeMiner()
 
     def read(self, file_name):
         database_object = Database()
@@ -40,7 +40,7 @@ class Main:
 
     def clo_tree_miner(self, K):
         NODE_MAPPER = return_node_mapper()
-        self.mine.find_frequent_itemset(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
+        self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
         # print(NODE_MAPPER)
 
 

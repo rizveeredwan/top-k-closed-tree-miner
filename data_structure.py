@@ -248,6 +248,11 @@ class CapheNode:
             print(st.pattern)
             st = st.next
 
+    def clear_attributes(self):
+        # clearing all the attributes, so that can be detected during deletion
+        self.support = self.pattern_ll_heap = self.idx_in_heap = None
+        return
+
 
 class Caphe:
     def __init__(self):
@@ -312,12 +317,14 @@ class Caphe:
         # pop from heap
         if special_node is None:  # remove top
             self.swap(0, len(self.nodes) - 1)
+            self.nodes[-1].clear_attributes()
             del self.nodes[-1]
             if len(self.nodes) > 0:
                 self.sort_nodes(current_idx=0)
         else:  # arbitrary node
             idx = special_node.idx_in_heap
             self.swap(idx, len(self.nodes) - 1)
+            self.nodes[-1].clear_attributes()
             del self.nodes[-1]
             if len(self.nodes) > 0:
                 self.sort_nodes(current_idx=idx)

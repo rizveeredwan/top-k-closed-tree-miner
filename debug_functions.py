@@ -89,3 +89,8 @@ class DebugFunctions:
     def print_ll_nodes_pattern(self, list_off_ll_nodes):
         for i in range(0, len(list_off_ll_nodes)):
             print(list_off_ll_nodes[i].pattern)
+
+
+def print_subtree_detection_codes(cspm_tree_nodes_list):
+    for i in range(0, len(cspm_tree_nodes_list)):
+        print(f"{i}: node id {cspm_tree_nodes_list[i].node_id} subtree_detection_code = {cspm_tree_nodes_list[i].subtree_detection_code}")
