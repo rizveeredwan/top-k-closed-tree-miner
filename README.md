@@ -1,2 +1,2 @@
-# closed-spm
-An implementation of SP-Tree based closed sequential pattern mining algorithm
+# KCloTreeMiner
+An implementation of SP-Tree based Top K closed sequential pattern mining algorithm
