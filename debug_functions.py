@@ -84,11 +84,12 @@ class DebugFunctions:
 
     def print_set_of_nodes(self, nodes):
         for i in range(0, len(nodes)):
-            print(f"node={nodes[i].node_id}, support={nodes[i].count} label={nodes[i].item}")
+            print(f"node={nodes[i].node_id}, support={nodes[i].count} label={nodes[i].item} event_no={nodes[i].event_no} "
+                  f"parent_item_bitset={nodes[i].parent_item_bitset}")
 
     def print_ll_nodes_pattern(self, list_off_ll_nodes):
         for i in range(0, len(list_off_ll_nodes)):
-            print(list_off_ll_nodes[i].pattern)
+            print(f"id={list_off_ll_nodes[i].node_id} pattern = {list_off_ll_nodes[i].pattern}")
 
 
 def print_subtree_detection_codes(cspm_tree_nodes_list):

@@ -47,11 +47,12 @@ class Main:
         NODE_MAPPER = return_node_mapper()
         self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
         self.print_closed_patterns()
+        print("\n")
         # print(NODE_MAPPER)
 
 
 if __name__ == '__main__':
     obj = Main()
-    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset2.txt'))
-    obj.clo_tree_miner(K=2)
+    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset1.txt'))
+    obj.clo_tree_miner(K=4)
 

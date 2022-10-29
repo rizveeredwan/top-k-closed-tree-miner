@@ -35,6 +35,8 @@ class PatternExtensionLinkedList:
     def insert(self, node, prev_node):  # A->B
         if prev_node.next_link is not None:
             node.next_link = prev_node.next_link
+            prev_node.next_link.prev_link = node
+
             node.prev_link = prev_node
             prev_node.next_link = node
         else:
@@ -63,6 +65,7 @@ class PatternExtensionLinkedList:
                 self.insert(node=ll_node, prev_node=current_node)
                 current_node = ll_node
             ll_nodes.append(current_node)  # newly created linked list nodes
+        assert(len(ll_nodes) == len(updated_cspm_tree_nodes))
         if len(updated_cspm_tree_nodes) == 0:
             assert(old_linked_list_node is not None)
             if old_linked_list_node.next_link is not None: #(a b c) -> (a c)
@@ -74,6 +77,18 @@ class PatternExtensionLinkedList:
             old_linked_list_node.next_link = None
             del old_linked_list_node
         return ll_nodes
+
+    def print(self, node):
+        print("printing all pattern extension LL nodes")
+        current = node
+        while current is not None:
+            if current.node is not None:
+                print("main ", current.node.node_id)
+                if current.prev_link.node is not None:
+                    print("prev  ", current.prev_link.node.node_id)
+                else:
+                    print("None")
+            current = current.next_link
 
 
 class ClosedPatternsLinkedList:  # closed1->closed2->...
@@ -155,7 +170,6 @@ class CandidatePatternLinkedListNode:
         return n
 
     def delete_node(self, node):
-        # this function is not used still
         if node.prev is not None and node.next is not None:
             node.prev.next = node.next
             node.next.prev = node.prev
