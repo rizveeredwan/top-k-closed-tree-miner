@@ -376,9 +376,11 @@ class KCloTreeMiner:
             # Front element from caphe
             caphe_node = self.caphe.front()
             print("***************** SHURUR SHOB CANDIDATES*************")
+            print("current ", caphe_node.support)
             print_all_the_candidates(self.support_table)
-            #print(caphe_node.support)
-            #print(caphe_node.print_caphe_node())
+            print(f"CAMP = {CMAP[0]} {CMAP[1]}")
+
+            # print(caphe_node.print_caphe_node())
             output = caphe_node.pop_last_element(caphe_node, NODE_MAPPER=NODE_MAPPER)
             if output is None:  # all the patterns have been checked
                 v = len(self.caphe.nodes)
@@ -403,15 +405,19 @@ class KCloTreeMiner:
                 f_sex = []  # final sequence extended symbols
                 f_iex = []  # final itemset extended symbols
                 # Sequence Extension
+                status_s_ex, status_i_ex = [], []
                 for i in range(0, len(s_ex)):
+                    status_s_ex.append(None)  # not possible, initialization
                     minsup = self.return_current_possible_minsup(K)
                     sup_pattern = self.pattern_update(pattern=pattern, item=s_ex[i], ex_type=0)
                     if (len(pattern) == 1 and len(pattern[0]) == 1) is False:  # will try to apply pruning
                         verdict = self.apply_cmap_based_pruning(CMAP=CMAP, pattern=pattern,
                                                                 type_of_extension=0, item=s_ex[i])
+                        if str(pattern) == str([[1, 2]]) and s_ex[i] == 4:
+                            print("DHUKI OH NO ",verdict, CMAP[0])
                         if verdict is False:
                             continue
-                    if str(pattern) == str([[5], [1]]) and s_ex[i] == 4:
+                    if str(pattern) == str([[1, 2]]) and s_ex[i] == 4:
                         global WORKING_WITH_PATTERN
                         WORKING_WITH_PATTERN = True
                     extended, heuristic_support, ext_support = self.pattern_extension(cspm_tree_nodes=cspm_tree_nodes,
@@ -429,11 +435,7 @@ class KCloTreeMiner:
                         f_sex.append(s_ex[i])  # sequence extended symbol
                         supp_s_ex.append(ext_support)  # saving the support
                         # e.g. [1][2] came but [2] was not calculated, it was absorbed
-                        # First occurrence for pattern[-1][-1]
-                        if CMAP[0].get(pattern[-1][-1]) is None:
-                            CMAP[0][pattern[-1][-1]] = {}
-                        if CMAP[0][pattern[-1][-1]].get(s_ex[i]) is None:
-                            CMAP[0][pattern[-1][-1]][s_ex[i]] = ext_support
+                        status_s_ex[-1] = ext_support # possible values for CMAP extension
                         # extended patterns will be pushed
                         candidate_node_ref = self.decision_for_each_pattern(pattern=sup_pattern, support=ext_support,
                                                                             cspm_tree_nodes=extended,
@@ -444,6 +446,7 @@ class KCloTreeMiner:
 
                 # Itemset Extension
                 for i in range(0, len(i_ex)):
+                    status_i_ex.append(None)
                     if heuristic.get(i_ex[i]) is not None:
                         if heuristic[i_ex[i]] < minsup:  # applying heuristic support
                             continue
@@ -464,10 +467,7 @@ class KCloTreeMiner:
                         supp_i_ex.append(ext_support)  # support during itemset extension
                         # e.g. [1][2] came but [2] was not calculated,
                         # it was absorbed, along with generic one's (1st time)
-                        if CMAP[1].get(pattern[-1][-1]) is None:
-                            CMAP[1][pattern[-1][-1]] = {}
-                        if CMAP[1][pattern[-1][-1]].get(i_ex[i]) is None:
-                            CMAP[1][pattern[-1][-1]][i_ex[i]] = ext_support
+                        status_i_ex[-1] = ext_support  # possible values for CMAP extension
 
                         if WORKING_WITH_PATTERN is not None:
                             print("**** IN MINING ***")
@@ -484,6 +484,20 @@ class KCloTreeMiner:
                                                                             NODE_MAPPER=NODE_MAPPER)
                         i_ex_candidate_ll_nodes.append(candidate_node_ref)
                         assert(candidate_node_ref is not None) # this node has been extended,being sure about support
+                # Update CMAP table: First occurrence for pattern[-1][-1]
+                for i in range(0, len(status_s_ex)):
+                    if status_s_ex[i] is not None:
+                        if CMAP[0].get(pattern[-1][-1]) is None:
+                            CMAP[0][pattern[-1][-1]] = {}
+                        if CMAP[0][pattern[-1][-1]].get(s_ex[i]) is None:
+                            CMAP[0][pattern[-1][-1]][s_ex[i]] = status_s_ex[i]
+                for i in range(0, len(status_i_ex)):
+                    if status_i_ex[i] is not None:
+                        if CMAP[1].get(pattern[-1][-1]) is None:
+                            CMAP[1][pattern[-1][-1]] = {}
+                        if CMAP[1][pattern[-1][-1]].get(i_ex[i]) is None:
+                            CMAP[1][pattern[-1][-1]][i_ex[i]] = status_i_ex[i]
+
                 # update in Caphe Node for sex and iex items
                 self.update_s_ex_and_i_ex(s_ex_candidate_ll_nodes=s_ex_candidate_ll_nodes, supp_s_ex=supp_s_ex,
                                           i_ex_candidate_ll_nodes=i_ex_candidate_ll_nodes, supp_i_ex=supp_i_ex, f_sex=f_sex, f_iex=f_iex)
