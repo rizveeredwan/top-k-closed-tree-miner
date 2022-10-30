@@ -39,7 +39,6 @@ class CSPMTree:
 
         #subtree detection
         self.subtree_detection_code = ""
-        self.num_child = -1
         #############
 
     def initializing_sp_tree_node(self, item, event_no, parent_node, parent_item_bitset, count):
@@ -54,8 +53,7 @@ class CSPMTree:
         node.parent_item_bitset = parent_item_bitset
         node.count = count
         # subtree detection code
-        parent_node.num_child += 1
-        node.subtree_detection_code = parent_node.subtree_detection_code + str(parent_node.num_child)
+        node.subtree_detection_code = ""
         # storing the node
         NODE_MAPPER[1 << global_node_count] = node
         return node
@@ -103,10 +101,13 @@ class CSPMTree:
         # generating next links using bfs
         _dict = {}
         node.down_next_link_ptr = None
+        cnt = -1
         if node.child_link is not None:
             for item in node.child_link:
                 for event_no in node.child_link[item]:
                     child = node.child_link[item][event_no]
+                    cnt += 1
+                    child.subtree_detection_code = node.subtree_detection_code + str(cnt)
                     self.nextlink_gen_using_dfs(child)
                     if node.down_next_link_ptr is None:
                         node.down_next_link_ptr = {}

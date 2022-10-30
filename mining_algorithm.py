@@ -333,6 +333,7 @@ class KCloTreeMiner:
         return True  # True: We can try to do the extension, False: We can not try to do the extension
 
     def k_clo_tree_miner(self, cspm_tree_root, K=2, NODE_MAPPER=None):
+        global WORKING_WITH_PATTERN
         minsup = 1  # starting min sup
         # Find frequent 1 itemset
         list_of_items = []
@@ -413,20 +414,19 @@ class KCloTreeMiner:
                     if (len(pattern) == 1 and len(pattern[0]) == 1) is False:  # will try to apply pruning
                         verdict = self.apply_cmap_based_pruning(CMAP=CMAP, pattern=pattern,
                                                                 type_of_extension=0, item=s_ex[i])
-                        if str(pattern) == str([[1, 2]]) and s_ex[i] == 4:
-                            print("DHUKI OH NO ",verdict, CMAP[0])
                         if verdict is False:
                             continue
-                    if str(pattern) == str([[1, 2]]) and s_ex[i] == 4:
-                        global WORKING_WITH_PATTERN
+                    if str(sup_pattern) == str([[2], [6]]):
                         WORKING_WITH_PATTERN = True
                     extended, heuristic_support, ext_support = self.pattern_extension(cspm_tree_nodes=cspm_tree_nodes,
                                                                                       item=s_ex[i], minsup=minsup,
                                                                                       type_of_extension=0,
                                                                                       last_event_bitset=last_event_bitset)
                     if WORKING_WITH_PATTERN is not None:
+                        debug.print_set_of_nodes(cspm_tree_nodes)
                         print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
                         print("extended ",extended)
+                        debug.print_set_of_nodes(extended)
                         WORKING_WITH_PATTERN = None
                     heuristic[s_ex[i]] = heuristic_support
                     # print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup} heuristic_support={heuristic[s_ex[i]]}")
@@ -468,14 +468,6 @@ class KCloTreeMiner:
                         # e.g. [1][2] came but [2] was not calculated,
                         # it was absorbed, along with generic one's (1st time)
                         status_i_ex[-1] = ext_support  # possible values for CMAP extension
-
-                        if WORKING_WITH_PATTERN is not None:
-                            print("**** IN MINING ***")
-                            debug.print_set_of_nodes(nodes=cspm_tree_nodes)
-                            print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup} heuristic_support={heuristic[s_ex[i]]}")
-                            debug.print_set_of_nodes(nodes=extended)
-                            print("***************")
-                            WORKING_WITH_PATTERN = None
                         # extended patterns will be pushed
                         candidate_node_ref = self.decision_for_each_pattern(pattern=sup_pattern, support=ext_support,
                                                                             cspm_tree_nodes=extended,
