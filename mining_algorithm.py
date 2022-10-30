@@ -39,8 +39,6 @@ class KCloTreeMiner:
 
     def pattern_extension(self, cspm_tree_nodes, item, minsup, type_of_extension, last_event_bitset=None):
         global WORKING_WITH_PATTERN
-        if WORKING_WITH_PATTERN is not None:
-            print("statrting")
         queue = deque([])
         current_support = 0
         final_list_head = PatternExtensionLinkedList(None, -1)
@@ -61,9 +59,6 @@ class KCloTreeMiner:
             if n.level == 0:  # For heuristic calculation
                 heuristic_support -= n.node.count
             down_nodes, down_support = n.node.get_next_link_nodes(node=n.node, item=item)
-            if WORKING_WITH_PATTERN is not None:
-                print(f"node id = {n.node.node_id} current_support = {current_support+cspm_tree_node.count} count={cspm_tree_node.count}")
-                final_list_head.print(node=final_list_head)
             # print(f"current_support {current_support} down_support {down_support} {minsup} {down_nodes}")
             if current_support + down_support < minsup:
                 heuristic_support = heuristic_support + down_support
@@ -71,8 +66,6 @@ class KCloTreeMiner:
             ll_nodes = final_list_head.replace(old_linked_list_node=n, updated_cspm_tree_nodes=down_nodes)
             for i in range(0, len(ll_nodes)):
                 current_support += ll_nodes[i].node.count
-                if WORKING_WITH_PATTERN is not None:
-                    print(f"item {item} base node = {cspm_tree_node.node_id} child={ll_nodes[i].node.node_id} current_support={current_support}")
                 if type_of_extension == 0:  # SE
                     if ll_nodes[i].level == 1:  # First level
                         heuristic_support += ll_nodes[i].node.count  # updating heuristic for level 1
@@ -83,8 +76,6 @@ class KCloTreeMiner:
                 elif type_of_extension == 1:  # IE
                     assert (last_event_bitset is not None)
                     if (ll_nodes[i].node.parent_item_bitset & last_event_bitset) == last_event_bitset:
-                        if WORKING_WITH_PATTERN is not None:
-                            print(f"Level > 1 milse parent={cspm_tree_node.node_id} child={ll_nodes[i].node.node_id}")
                         continue  # condition matched
                     else:  # all the desired items not found in the same event
                         queue.append(ll_nodes[i])
@@ -171,7 +162,8 @@ class KCloTreeMiner:
                     for i in range(0, len(absorption_status)):
                         if absorption_status[i] is True:
                             # this candidate is not needed any more, as absorbed
-                            self.support_table[support].caphe_node.pattern_ll_node[1].delete_node(node=L2[i])
+                            self.support_table[support].caphe_node.pattern_ll_node[1].delete_node(node=L2[i],
+                                                                                                  base_caphe_node=self.support_table[support].caphe_node)
         # True/False: Can be/csn not be candidate, None/0: Can be/can never be closed still
         return candidacy_flag, closed_flag
 
@@ -383,8 +375,10 @@ class KCloTreeMiner:
         while len(self.caphe.nodes) > 0:
             # Front element from caphe
             caphe_node = self.caphe.front()
-            print(caphe_node.support)
-            # print(caphe_node.print_caphe_node())
+            print("***************** SHURUR SHOB CANDIDATES*************")
+            print_all_the_candidates(self.support_table)
+            #print(caphe_node.support)
+            #print(caphe_node.print_caphe_node())
             output = caphe_node.pop_last_element(caphe_node, NODE_MAPPER=NODE_MAPPER)
             if output is None:  # all the patterns have been checked
                 v = len(self.caphe.nodes)
@@ -417,10 +411,17 @@ class KCloTreeMiner:
                                                                 type_of_extension=0, item=s_ex[i])
                         if verdict is False:
                             continue
+                    if str(pattern) == str([[5], [1]]) and s_ex[i] == 4:
+                        global WORKING_WITH_PATTERN
+                        WORKING_WITH_PATTERN = True
                     extended, heuristic_support, ext_support = self.pattern_extension(cspm_tree_nodes=cspm_tree_nodes,
                                                                                       item=s_ex[i], minsup=minsup,
                                                                                       type_of_extension=0,
                                                                                       last_event_bitset=last_event_bitset)
+                    if WORKING_WITH_PATTERN is not None:
+                        print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
+                        print("extended ",extended)
+                        WORKING_WITH_PATTERN = None
                     heuristic[s_ex[i]] = heuristic_support
                     # print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup} heuristic_support={heuristic[s_ex[i]]}")
                     if extended is not None:  # did not fail minsup, try to add it in the Caphe
@@ -453,16 +454,10 @@ class KCloTreeMiner:
                             continue
                     minsup = self.return_current_possible_minsup(K)
                     sup_pattern = self.pattern_update(pattern=pattern, item=i_ex[i], ex_type=1)
-                    if str(pattern) == str([[1]]) and i_ex[i] == 5:
-                        global WORKING_WITH_PATTERN
-                        WORKING_WITH_PATTERN = True
                     extended, heuristic_support, ext_support = self.pattern_extension(cspm_tree_nodes=cspm_tree_nodes,
                                                                                       item=i_ex[i], minsup=minsup,
                                                                                       type_of_extension=1,
                                                                                       last_event_bitset=last_event_bitset)
-                    if WORKING_WITH_PATTERN is not None:
-                        print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
-                        WORKING_WITH_PATTERN = None
                     if extended is not None:  # did not fail minsup, try to add it in the Caphe
                         assert (ext_support >= minsup)  # must beat this support at least
                         f_iex.append(i_ex[i])  # itemset extended symbol

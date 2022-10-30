@@ -95,3 +95,10 @@ class DebugFunctions:
 def print_subtree_detection_codes(cspm_tree_nodes_list):
     for i in range(0, len(cspm_tree_nodes_list)):
         print(f"{i}: node id {cspm_tree_nodes_list[i].node_id} subtree_detection_code = {cspm_tree_nodes_list[i].subtree_detection_code}")
+
+
+def print_all_the_candidates(support_table):
+    for support in support_table:
+        if support_table[support].caphe_node is not None:
+            print(f"support = {support}")
+            support_table[support].caphe_node.print_caphe_node()

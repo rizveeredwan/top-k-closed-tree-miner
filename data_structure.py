@@ -169,13 +169,18 @@ class CandidatePatternLinkedListNode:
         n.prev = current
         return n
 
-    def delete_node(self, node):
+    def delete_node(self, node, base_caphe_node):
         if node.prev is not None and node.next is not None:
             node.prev.next = node.next
             node.next.prev = node.prev
         elif node.next is None:
             assert(node.prev is not None)
             node.prev.next = None
+        if base_caphe_node.pattern_ll_node[1] == node:
+            # it was ending node, adjusting [st, end]
+            assert(node.prev is not None)
+            base_caphe_node.pattern_ll_node[1] = node.prev
+
         node.prev = None
         node.next = None
         del node
@@ -207,6 +212,10 @@ class CapheNode:
     def insert_pattern(self, caphe_node, pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag=None):
         # adding patterns as ll list, new pattern to explore
         # adding after end
+        if str(pattern) == str([[5], [4]]):
+            print("DEBUG CANDIDATES OMG")
+            caphe_node.print_caphe_node()
+
         if caphe_node.pattern_ll_node[0].next is None:
             # candidates have been removed
             caphe_node.pattern_ll_node[1] = caphe_node.pattern_ll_node[0]
@@ -216,7 +225,9 @@ class CapheNode:
                                               flag=flag)
         # new ending node
         caphe_node.pattern_ll_node[1] = pattern_ll_node
-        # caphe_node.print_caphe_node()
+        if str(pattern) == str([[5], [1], [4]]):
+            print(f"{pattern} ASCHE SPECIAL {pattern_ll_node.prev.pattern} {current.pattern}")
+            caphe_node.print_caphe_node()
         return pattern_ll_node
 
     def pop_last_element(self, caphe_node,
