@@ -134,11 +134,13 @@ class ClosedPatternsLinkedList:  # closed1->closed2->...
         # traversing from bottom to the main node
         print("printing the closed nodes")
         st = self
+        ct = 0
         while st is not None:
+            ct += 1
             print(st.pattern)
             st = st.next
         print("DONE")
-        return
+        return ct
 
 
 class CandidatePatternLinkedListNode:
@@ -321,6 +323,7 @@ class Caphe:
         while True:
             left = 2 * current_idx + 1
             right = 2 * current_idx + 2
+            print(f"current_idx = {current_idx}, {len(self.nodes)}")
             _list = [(current_idx, self.nodes[current_idx])]
             if right < len(self.nodes):
                 _list.append((right, self.nodes[right]))
@@ -346,11 +349,15 @@ class Caphe:
                 self.sort_nodes(current_idx=0)
         else:  # arbitrary node
             idx = special_node.idx_in_heap
+            ending_node = False
+            if idx == len(self.nodes)-1:
+                ending_node = True
             self.swap(idx, len(self.nodes) - 1)
             self.nodes[-1].clear_attributes()
             del self.nodes[-1]
             if len(self.nodes) > 0:
-                self.sort_nodes(current_idx=idx)
+                if ending_node is False:
+                    self.sort_nodes(current_idx=idx)
 
     def print(self):
         for i in range(0, len(self.nodes)):

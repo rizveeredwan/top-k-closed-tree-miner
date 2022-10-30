@@ -197,7 +197,7 @@ class KCloTreeMiner:
             elif self.support_min_heap[0].priority < support and self.support_table.get(
                     support) is None:  # the minimum one have less support delete this , insert new
                 # this support should not be in the table
-                self.delete_whole_entry_from_support_table(support=support)
+                self.delete_whole_entry_from_support_table(support=self.support_min_heap[0].priority)
                 # insert new support
                 # Dictionary entry creation
                 self.create_key_support_table(support=support)  # dictionary entry, min heap, caphe node
