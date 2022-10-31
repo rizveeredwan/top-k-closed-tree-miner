@@ -176,6 +176,7 @@ class CandidatePatternLinkedListNode:
             node.prev.next = node.next
             node.next.prev = node.prev
         elif node.next is None:
+            print(f"DEBUG {node.pattern}")
             assert(node.prev is not None)
             node.prev.next = None
         if base_caphe_node.pattern_ll_node[1] == node:
@@ -238,17 +239,12 @@ class CapheNode:
             pattern_ll_node = caphe_node.pattern_ll_node[0].next
             if pattern_ll_node.next is None:
                 # reached last node
+                pattern_ll_node.prev.next = None
                 caphe_node.pattern_ll_node[1] = caphe_node.pattern_ll_node[0]
             else:
                 # None -> a->b : None->b
                 pattern_ll_node.prev.next = pattern_ll_node.next
                 pattern_ll_node.next.prev = pattern_ll_node.prev
-
-            """
-            pattern_ll_node = caphe_node.pattern_ll_node[1]
-            caphe_node.pattern_ll_node[1].prev.next = None
-            caphe_node.pattern_ll_node[1] = pattern_ll_node.prev
-            """
 
             pattern = pattern_ll_node.pattern
             cspm_tree_nodes = pattern_ll_node.extract_cspm_tree_nodes(linked_list_node=pattern_ll_node,
@@ -257,6 +253,7 @@ class CapheNode:
             s_ex = pattern_ll_node.s_ex
             i_ex = pattern_ll_node.i_ex
             flag = pattern_ll_node.flag
+
             # before deletion
             pattern_ll_node.prev = None
             pattern_ll_node.next = None
@@ -323,7 +320,6 @@ class Caphe:
         while True:
             left = 2 * current_idx + 1
             right = 2 * current_idx + 2
-            print(f"current_idx = {current_idx}, {len(self.nodes)}")
             _list = [(current_idx, self.nodes[current_idx])]
             if right < len(self.nodes):
                 _list.append((right, self.nodes[right]))

@@ -373,10 +373,12 @@ class KCloTreeMiner:
         print(len(self.caphe.nodes))
         self.caphe.print()
         CMAP = {0: {}, 1: {}}  # 0: SE, 1: IE
+        ITR_CNT = 1
         while len(self.caphe.nodes) > 0:
+            ITR_CNT += 1
             # Front element from caphe
             caphe_node = self.caphe.front()
-            print("***************** SHURUR SHOB CANDIDATES*************")
+            print(f"***************** SHURUR SHOB CANDIDATES : {ITR_CNT}*************")
             print("current ", caphe_node.support)
             print_all_the_candidates(self.support_table)
             print(f"CAMP = {CMAP[0]} {CMAP[1]}")
@@ -416,18 +418,12 @@ class KCloTreeMiner:
                                                                 type_of_extension=0, item=s_ex[i])
                         if verdict is False:
                             continue
-                    if str(sup_pattern) == str([[2], [6]]):
-                        WORKING_WITH_PATTERN = True
+
                     extended, heuristic_support, ext_support = self.pattern_extension(cspm_tree_nodes=cspm_tree_nodes,
                                                                                       item=s_ex[i], minsup=minsup,
                                                                                       type_of_extension=0,
                                                                                       last_event_bitset=last_event_bitset)
-                    if WORKING_WITH_PATTERN is not None:
-                        debug.print_set_of_nodes(cspm_tree_nodes)
-                        print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
-                        print("extended ",extended)
-                        debug.print_set_of_nodes(extended)
-                        WORKING_WITH_PATTERN = None
+
                     heuristic[s_ex[i]] = heuristic_support
                     # print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup} heuristic_support={heuristic[s_ex[i]]}")
                     if extended is not None:  # did not fail minsup, try to add it in the Caphe
