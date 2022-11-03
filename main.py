@@ -55,6 +55,6 @@ class Main:
 
 if __name__ == '__main__':
     obj = Main()
-    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset8.txt'))
-    obj.clo_tree_miner(K=4)
+    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset2.txt'))
+    obj.clo_tree_miner(K=3)
 

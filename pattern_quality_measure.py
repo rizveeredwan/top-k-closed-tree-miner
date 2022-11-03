@@ -58,9 +58,9 @@ def two_pattern_absorption_check(nodes_of_A, nodes_of_B):
     # A has enclosed B
     # decision if it is enough to keep A only
     # same subtree, same event number
-    print_subtree_detection_codes(cspm_tree_nodes_list=nodes_of_A)
-    print()
-    print_subtree_detection_codes(cspm_tree_nodes_list=nodes_of_B)
+    # print_subtree_detection_codes(cspm_tree_nodes_list=nodes_of_A)
+    # print()
+    # print_subtree_detection_codes(cspm_tree_nodes_list=nodes_of_B)
     a_ptr, b_ptr = 0, 0
     assert (len(nodes_of_A) >= len(nodes_of_B))  # as in underlying and super pattern
     while a_ptr < len(nodes_of_A):

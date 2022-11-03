@@ -154,6 +154,7 @@ class CandidatePatternLinkedListNode:
         self.s_ex = None
         self.i_ex = None
         self.flag = None  # [0: Can never be closed, None: no decision]
+        self.work_with_sex = True # [True: work with it, False: It is abosrbed, do not work with it even if exists]
         # linked lists
         self.next = None
         self.prev = None

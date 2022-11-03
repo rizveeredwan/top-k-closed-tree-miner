@@ -120,8 +120,8 @@ class KCloTreeMiner:
             L1, L2 = closure_check(linked_list_nodes=self.support_table[support].closed_patterns, p=pattern)
             if len(L1) > 0 and len(L2) > 0:
                 problem = 1
-                print("Closed Pattern cross presence ", pattern)
-                self.support_table[support].closed_patterns.print()
+                # print("Closed Pattern cross presence ", pattern)
+                # self.support_table[support].closed_patterns.print()
                 assert (problem == 0)
             elif len(L1) > 0:
                 assert (len(L1) == 1)  # in this case there should be only one that is enclosing
@@ -144,7 +144,7 @@ class KCloTreeMiner:
                 # print(f"len(L1)={len(L1)} len(L2)={len(L2)} pattern={pattern}")
                 if len(L1) > 0:
                     closed_flag = 0  # P can never be closed pattern
-                    # *******can add faster return flag in absorption_status calculation
+                    # ******* can add faster return flag in absorption_status calculation
                     absorption_status = absorption_check(list_of_ll_nodes=L1, nodes_of_p=cspm_tree_nodes, flag=0,
                                                          NODE_MAPPER=NODE_MAPPER, fast_return=True)
                     for i in range(0, len(absorption_status)):  # x in L1 encloses P
@@ -155,13 +155,14 @@ class KCloTreeMiner:
                 if len(L2) > 0:
                     # these candidates can never be closed, P absorbs them
                     for i in range(0, len(L2)):
-                        L2[i].flag = 0  # it can never be candidate, P absorbs it
+                        L2[i].flag = 0  # it can never be closed, P absorbs it
 
                     absorption_status = absorption_check(list_of_ll_nodes=L2, nodes_of_p=cspm_tree_nodes, flag=1,
                                                          NODE_MAPPER=NODE_MAPPER)
                     for i in range(0, len(absorption_status)):
                         if absorption_status[i] is True:
-                            # this candidate is not needed any more, as absorbed
+                            # this candidate is absorbed by P, it does not need sex
+                            L2[i].work_with_sex = False 
                             self.support_table[support].caphe_node.pattern_ll_node[1].delete_node(node=L2[i],
                                                                                                   base_caphe_node=self.support_table[support].caphe_node)
         # True/False: Can be/csn not be candidate, None/0: Can be/can never be closed still
@@ -457,6 +458,10 @@ class KCloTreeMiner:
                                                                                       item=i_ex[i], minsup=minsup,
                                                                                       type_of_extension=1,
                                                                                       last_event_bitset=last_event_bitset)
+                    if str( [[5], [1, 2, 6], [2]] ) == str(pattern) and i_ex[i] == 4:
+                        WORKING_WITH_PATTERN = True
+                        print(f"CAME HERE {ext_support} {extended}")
+                        WORKING_WITH_PATTERN = None
                     if extended is not None:  # did not fail minsup, try to add it in the Caphe
                         assert (ext_support >= minsup)  # must beat this support at least
                         f_iex.append(i_ex[i])  # itemset extended symbol
