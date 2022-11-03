@@ -159,7 +159,7 @@ class CandidatePatternLinkedListNode:
         self.next = None
         self.prev = None
 
-    def create_node(self, pattern, cspm_tree_node_bitset, current, cspm_tree_nodes, s_ex, i_ex, flag=None):
+    def create_node(self, pattern, cspm_tree_node_bitset, current, cspm_tree_nodes, s_ex, i_ex, flag=None, work_with_sex=True):
         n = CandidatePatternLinkedListNode()
         n.pattern = pattern
         n.cspm_tree_node_bitset = cspm_tree_node_bitset
@@ -167,6 +167,7 @@ class CandidatePatternLinkedListNode:
         n.s_ex = s_ex
         n.i_ex = i_ex
         n.flag = flag
+        n.work_with_sex = work_with_sex
         # creating the links
         current.next = n
         n.prev = current
@@ -213,7 +214,8 @@ class CapheNode:
             return True
         return False
 
-    def insert_pattern(self, caphe_node, pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag=None):
+    def insert_pattern(self, caphe_node, pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag=None,
+                       work_with_sex=True):
         # adding patterns as ll list, new pattern to explore
         # adding after end
         if caphe_node.pattern_ll_node[0].next is None:
@@ -221,8 +223,8 @@ class CapheNode:
             caphe_node.pattern_ll_node[1] = caphe_node.pattern_ll_node[0]
         current = caphe_node.pattern_ll_node[1]
         pattern_ll_node = current.create_node(pattern=pattern, cspm_tree_node_bitset=cspm_tree_node_bitset,
-                                              cspm_tree_nodes=cspm_tree_nodes, current=current, s_ex=s_ex, i_ex=i_ex,
-                                              flag=flag)
+                                              current=current, cspm_tree_nodes=cspm_tree_nodes, s_ex=s_ex, i_ex=i_ex,
+                                              flag=flag, work_with_sex=work_with_sex)
         # new ending node
         caphe_node.pattern_ll_node[1] = pattern_ll_node
         # caphe_node.print_caphe_node()
@@ -254,12 +256,13 @@ class CapheNode:
             s_ex = pattern_ll_node.s_ex
             i_ex = pattern_ll_node.i_ex
             flag = pattern_ll_node.flag
+            work_with_sex = pattern_ll_node.work_with_sex
 
             # before deletion
             pattern_ll_node.prev = None
             pattern_ll_node.next = None
             del pattern_ll_node
-            return pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag
+            return pattern, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, flag, work_with_sex
         else:  # no pattern in the bucket
             return None  # no entry here
 

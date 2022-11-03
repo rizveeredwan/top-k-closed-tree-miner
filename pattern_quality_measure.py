@@ -1,5 +1,4 @@
-from data_structure import generate_cspm_tree_nodes_from_bitset
-
+from data_structure import generate_cspm_tree_nodes_from_bitset, CandidatePatternLinkedListNode
 from debug_functions import *
 
 def event_enclose_check(event_A, event_B):
@@ -85,10 +84,18 @@ def closure_check(linked_list_nodes, p):
     curr = curr.next
     L1, L2 = [], [] # L1: Existing enclosing p and L2: P enclosing existing
     while curr is not None:
-        if two_pattern_enclose_check(A=p, B=curr.pattern) is True:
-            L2.append(curr)
-        elif two_pattern_enclose_check(A=curr.pattern, B=p) is True:
-            L1.append(curr)
+        if isinstance(curr, CandidatePatternLinkedListNode):
+            # Optimization for CandidatePatternLinkedListNodes
+            if curr.work_with_sex is True and two_pattern_enclose_check(A=p, B=curr.pattern) is True:
+                # If curr is already enclosed and absorbed, p can't make any affect on it
+                L2.append(curr)
+            elif two_pattern_enclose_check(A=curr.pattern, B=p) is True:
+                L1.append(curr)
+        else:
+            if two_pattern_enclose_check(A=p, B=curr.pattern) is True:
+                L2.append(curr)
+            elif two_pattern_enclose_check(A=curr.pattern, B=p) is True:
+                L1.append(curr)
         curr = curr.next
     return L1, L2
 
