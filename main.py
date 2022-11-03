@@ -1,5 +1,7 @@
+import functools
 import os
 
+import debug_functions
 from cspm_tree import CSPMTree, global_node_count, return_node_mapper
 from database import Database
 from debug_functions import DebugFunctions
@@ -38,23 +40,30 @@ class Main:
         # debug
         # self.debug.sanity_test_next_links(self.cspm_tree_root)
 
-    def print_closed_patterns(self):
+    def print_final_closed_patterns(self):
         ct = 0
+        all_patterns = []
         for key in self.mine.support_table:
             print(f"support = {key}")
-            ct += self.mine.support_table[key].closed_patterns.print()-1
+            val, _list = self.mine.support_table[key].closed_patterns.print()
+            ct += (val-1)
+            for i in range(0, len(_list)):
+                all_patterns.append((key, str(_list[i])))
+        all_patterns.sort(key=functools.cmp_to_key(debug_functions.pattern_sort_func))
+        for i in range(0, len(all_patterns)):
+            print(all_patterns[i][0], all_patterns[i][1])
         print("total patterns ",ct)
 
     def clo_tree_miner(self, K):
         NODE_MAPPER = return_node_mapper()
         self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
-        self.print_closed_patterns()
-        print("\n")
-        # print(NODE_MAPPER)
+        print("Algorithm Done")
+        # self.print_closed_patterns()
+        self.print_final_closed_patterns()
 
 
 if __name__ == '__main__':
     obj = Main()
-    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset1.txt'))
+    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset13.txt'))
     obj.clo_tree_miner(K=5)
 

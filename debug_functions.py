@@ -1,3 +1,6 @@
+import functools
+
+
 class DebugFunctions:
     def __int__(self):
         pass
@@ -95,6 +98,18 @@ class DebugFunctions:
 def print_subtree_detection_codes(cspm_tree_nodes_list):
     for i in range(0, len(cspm_tree_nodes_list)):
         print(f"{i}: node id {cspm_tree_nodes_list[i].node_id} subtree_detection_code = {cspm_tree_nodes_list[i].subtree_detection_code}")
+
+
+def pattern_sort_func(a, b):
+    if a[0] > b[0]:
+        return -1
+    elif a[0] == b[0]:
+        if a[1] < b[1]:
+            return -1
+        else:
+            return 1
+    else:
+        return 1
 
 
 def print_all_the_candidates(support_table):

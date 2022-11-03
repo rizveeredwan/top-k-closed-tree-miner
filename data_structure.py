@@ -135,12 +135,15 @@ class ClosedPatternsLinkedList:  # closed1->closed2->...
         print("printing the closed nodes")
         st = self
         ct = 0
+        save = []
         while st is not None:
             ct += 1
             print(st.pattern)
+            if st.pattern is not None:
+                save.append([st.pattern])
             st = st.next
         print("DONE")
-        return ct
+        return ct, save
 
 
 class CandidatePatternLinkedListNode:
@@ -270,7 +273,7 @@ class CapheNode:
         print("Printing the candidates in caphe node")
         st = self.pattern_ll_node[0]
         en = self.pattern_ll_node[1]
-        while st != None:
+        while st is not None:
             print(st.pattern)
             st = st.next
 
