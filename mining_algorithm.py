@@ -382,9 +382,9 @@ class KCloTreeMiner:
             # Front element from caphe
             caphe_node = self.caphe.front()
             print(f"***************** SHURUR SHOB CANDIDATES : {ITR_CNT}*************")
-            print("current ", caphe_node.support)
-            print_all_the_candidates(self.support_table)
-            print(f"CAMP = {CMAP[0]} {CMAP[1]}")
+            # print("current ", caphe_node.support)
+            # print_all_the_candidates(self.support_table)
+            # print(f"CAMP = {CMAP[0]} {CMAP[1]}")
 
             # print(caphe_node.print_caphe_node())
             output = caphe_node.pop_last_element(caphe_node, NODE_MAPPER=NODE_MAPPER)
