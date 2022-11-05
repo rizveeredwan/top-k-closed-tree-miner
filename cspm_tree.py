@@ -39,14 +39,15 @@ class CSPMTree:
 
         #subtree detection
         self.subtree_detection_code = ""
+        self.depth = 0
         #############
 
     def initializing_sp_tree_node(self, item, event_no, parent_node, parent_item_bitset, count):
         global global_node_count, NODE_MAPPER, TWO_POWERS
-        global_node_count += 1
+        # global_node_count += 1
         # print("Global node count ", global_node_count)
         node = CSPMTree()
-        node.node_id = global_node_count
+        # node.node_id = global_node_count
         node.item = item
         node.event_no = event_no
         node.parent_node = parent_node
@@ -55,7 +56,7 @@ class CSPMTree:
         # subtree detection code
         node.subtree_detection_code = ""
         # storing the node
-        NODE_MAPPER[1 << global_node_count] = node
+        # NODE_MAPPER[1 << global_node_count] = node
         return node
 
     def insert(self, sp_tree_node, processed_sequence, event_no, item_no, event_bitset):
@@ -98,16 +99,20 @@ class CSPMTree:
         return save, support
 
     def nextlink_gen_using_dfs(self, node):
+        global global_node_count
+        global_node_count += 1
+        node.node_id = global_node_count
         # generating next links using bfs
         _dict = {}
         node.down_next_link_ptr = None
-        cnt = -1
+        cnt = 0
         if node.child_link is not None:
             for item in node.child_link:
                 for event_no in node.child_link[item]:
                     child = node.child_link[item][event_no]
                     cnt += 1
                     child.subtree_detection_code = node.subtree_detection_code + str(cnt)
+                    child.depth = node.depth + 1
                     self.nextlink_gen_using_dfs(child)
                     if node.down_next_link_ptr is None:
                         node.down_next_link_ptr = {}

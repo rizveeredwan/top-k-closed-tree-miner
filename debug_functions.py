@@ -1,5 +1,5 @@
 import functools
-
+from pattern_quality_measure import same_subtree_checking
 
 class DebugFunctions:
     def __int__(self):
@@ -117,3 +117,25 @@ def print_all_the_candidates(support_table):
         if support_table[support].caphe_node is not None:
             print(f"support = {support}")
             support_table[support].caphe_node.print_caphe_node()
+
+
+def checking_the_nodes_order(pattern, cspm_tree_nodes):
+    print(f"pattern = {pattern}")
+    for i in range(0, len(cspm_tree_nodes)-1):
+        prev = cspm_tree_nodes[i].subtree_detection_code[0:len(cspm_tree_nodes[i].subtree_detection_code)-cspm_tree_nodes[i].depth+1]
+        current = cspm_tree_nodes[i+1].subtree_detection_code[0:len(cspm_tree_nodes[i+1].subtree_detection_code)-cspm_tree_nodes[i+1].depth+1]
+        v = same_subtree_checking(pattern_node=cspm_tree_nodes[i+1], super_pattern_node=cspm_tree_nodes[i])
+        print(f"{v} {prev} {current} {cspm_tree_nodes[i].depth} {cspm_tree_nodes[i+1].depth}")
+        if v < 0:
+            continue
+        else:
+            print(f"problem {prev} {cspm_tree_nodes[i].depth} {current} {cspm_tree_nodes[i+1].depth}")
+            print_subtree_detection_codes(cspm_tree_nodes_list=cspm_tree_nodes)
+            v = 1
+            assert(v==0)
+
+def print_support_min_heap(support_min_heap):
+    save = []
+    for i in range(0, len(support_min_heap)):
+        save.append(support_min_heap[i].priority)
+    print(save)

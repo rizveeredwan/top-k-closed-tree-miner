@@ -1,7 +1,10 @@
 import heapq
 from collections import deque
 
-from debug_functions import DebugFunctions
+import debug_functions
+from debug_functions import DebugFunctions, checking_the_nodes_order
+
+
 from data_structure import *
 from pattern_quality_measure import *
 
@@ -381,7 +384,8 @@ class KCloTreeMiner:
             ITR_CNT += 1
             # Front element from caphe
             caphe_node = self.caphe.front()
-            print(f"***************** SHURUR SHOB CANDIDATES : {ITR_CNT}*************")
+            print(f"***************** SHURUR SHOB CANDIDATES : {ITR_CNT} {self.return_current_possible_minsup(K)} {len(self.support_min_heap)}*************")
+            # debug_functions.print_support_min_heap(self.support_min_heap)
             # print("current ", caphe_node.support)
             # print_all_the_candidates(self.support_table)
             # print(f"CAMP = {CMAP[0]} {CMAP[1]}")
@@ -465,6 +469,7 @@ class KCloTreeMiner:
                         WORKING_WITH_PATTERN = True
                         print(f"CAME HERE {ext_support} {extended}")
                         WORKING_WITH_PATTERN = None
+                    # print(f"sup_pattern = {sup_pattern} ext_support = {ext_support} minsup = {minsup}")
                     if extended is not None:  # did not fail minsup, try to add it in the Caphe
                         assert (ext_support >= minsup)  # must beat this support at least
                         f_iex.append(i_ex[i])  # itemset extended symbol

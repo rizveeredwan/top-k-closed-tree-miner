@@ -39,17 +39,37 @@ def two_pattern_enclose_check(A, B):
 
 
 def same_subtree_checking(pattern_node, super_pattern_node):
+    base_parent_code = pattern_node.subtree_detection_code[0:len(pattern_node.subtree_detection_code)-pattern_node.depth+1]
+    base_super_pattern_code = super_pattern_node.subtree_detection_code[0:len(super_pattern_node.subtree_detection_code)-super_pattern_node.depth+1]
+    if base_parent_code == "":
+        base_parent_code = "-1"
+    if base_super_pattern_code == "":
+        base_super_pattern_code = "-1"
+    if int(base_super_pattern_code) < int(base_parent_code):
+        return -1 # small
+    if int(base_super_pattern_code) > int(base_parent_code):
+        return 1 # big
+    pattern_code = pattern_node.subtree_detection_code[len(pattern_node.subtree_detection_code)-pattern_node.depth+1:]
+    super_pattern_code = super_pattern_node.subtree_detection_code[len(super_pattern_node.subtree_detection_code)-super_pattern_node.depth+1:]
+
     # if supper_pattern_node and pattern_node are in the same subtree or not
-    for i in range(0, len(pattern_node.subtree_detection_code)):
-        if len(super_pattern_node.subtree_detection_code) - 1 >= i and \
-                super_pattern_node.subtree_detection_code[i] == pattern_node.subtree_detection_code[i]:
-            continue
-        elif len(super_pattern_node.subtree_detection_code) - 1 >= i and \
-                super_pattern_node.subtree_detection_code[i] < pattern_node.subtree_detection_code[i]:
-            return -1  # small
-        elif len(super_pattern_node.subtree_detection_code) - 1 >= i and \
-                super_pattern_node.subtree_detection_code[i] > pattern_node.subtree_detection_code[i]:
-            return 1  # big
+    i, j = 0, 0
+    while i < len(pattern_code) and j < len(super_pattern_code):
+        if i < len(pattern_code) and j < len(super_pattern_code):
+            if pattern_code[i] == super_pattern_code[j]:
+                i += 1
+                j += 1
+                continue
+            elif pattern_code[i] > super_pattern_code[j]:
+                return -1
+            elif pattern_code[i] < super_pattern_code[j]:
+                return 1
+        else:
+            if j < len(super_pattern_code) and i >= len(pattern_code):
+                return 1
+            if j >= len(super_pattern_code) and i < len(pattern_code):
+                return -1
+            pass
     return 0  # perfectly matched
 
 
@@ -75,6 +95,13 @@ def two_pattern_absorption_check(nodes_of_A, nodes_of_B):
             return False  # A can not completely absorb B, A's occurrence not in the same event
         elif subtree_verdict > 0:
             b_ptr += 1
+        else:
+            print("WTF ",subtree_verdict, nodes_of_A[a_ptr].subtree_detection_code, nodes_of_A[b_ptr].subtree_detection_code)
+            print_subtree_detection_codes(cspm_tree_nodes_list=nodes_of_A)
+            print_subtree_detection_codes(cspm_tree_nodes_list=nodes_of_B)
+            v=1
+            assert(v==0)
+
     return True  # A can fully absorb B including nodes , ends in same event always
 
 
