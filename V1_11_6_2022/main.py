@@ -1,5 +1,6 @@
 import functools
 import os
+from timeit import default_timer as timer
 
 import debug_functions
 from cspm_tree import CSPMTree, global_node_count, return_node_mapper
@@ -8,9 +9,9 @@ from debug_functions import DebugFunctions
 from mining_algorithm import KCloTreeMiner
 
 """
-# Extension Convention 
+# Extension Convention
 0: Sequence extension (SE)
-1: Itemset extension (IE)  
+1: Itemset extension (IE)
 """
 
 
@@ -55,15 +56,17 @@ class Main:
         print("total patterns ",ct)
 
     def clo_tree_miner(self, K):
+        start = timer()
         NODE_MAPPER = return_node_mapper()
         self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
+        end = timer()
         print("Algorithm Done")
         # self.print_closed_patterns()
         self.print_final_closed_patterns()
+        print(f"{end - start}")
 
 
 if __name__ == '__main__':
     obj = Main()
-    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset15.txt'))
-    obj.clo_tree_miner(K=22)
-
+    obj.read(file_name=os.path.join('..', 'dataset', 'closed_dataset15.txt'))
+    obj.clo_tree_miner(K=20)
