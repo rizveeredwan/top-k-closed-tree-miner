@@ -465,10 +465,6 @@ class KCloTreeMiner:
                 print(
                     f"pattern {pattern} support {caphe_node.support} closed_flag {flag} work_with_sex {work_with_sex}")
                 print(f"pattern={pattern} s_ex={s_ex} i_ex={i_ex}")
-                if str([[3], [4], [2]]) == str(pattern):
-                    WORKING_WITH_PATTERN = True
-                    print(f"CAME HERE")
-                    WORKING_WITH_PATTERN = None
                 # if no one has canceled this pattern's closedness, identify it as close
                 if flag is None:  # this pattern can be closed (0 means not closed), update that information
                     """

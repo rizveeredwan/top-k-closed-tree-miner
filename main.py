@@ -10,9 +10,9 @@ from debug_functions import DebugFunctions
 from mining_algorithm import KCloTreeMiner
 
 """
-# Extension Convention 
+# Extension Convention
 0: Sequence extension (SE)
-1: Itemset extension (IE)  
+1: Itemset extension (IE)
 """
 
 
@@ -48,7 +48,7 @@ class Main:
         for key in self.mine.support_table:
             print(f"support = {key}")
             """
-            # trie version 
+            # trie version
             val, _list = self.mine.support_table[key].closed_patterns_with_trie[0].print_patterns(type=0)
             """
             # linked list version
@@ -78,6 +78,5 @@ class Main:
 
 if __name__ == '__main__':
     obj = Main()
-    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset15.txt'))
-    obj.clo_tree_miner(K=20)
-
+    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
+    obj.clo_tree_miner(K=48)
