@@ -9,6 +9,8 @@ from database import Database
 from debug_functions import DebugFunctions
 from mining_algorithm import KCloTreeMiner
 
+from maximal_pattern_find import *
+
 """
 # Extension Convention
 0: Sequence extension (SE)
@@ -45,6 +47,7 @@ class Main:
     def print_final_closed_patterns(self):
         ct = 0
         all_patterns = []
+        group_of_patterns = {}
         for key in self.mine.support_table:
             print(f"support = {key}")
             """
@@ -53,10 +56,16 @@ class Main:
             """
             # linked list version
             val, _list = self.mine.support_table[key].closed_patterns.print()
+            group_of_patterns[key] = []
             ct += (val-1)
             for i in range(0, len(_list)):
                 all_patterns.append((key, str(_list[i][0])))
+                group_of_patterns[key].append(_list[i][0])
         all_patterns.sort(key=functools.cmp_to_key(debug_functions.pattern_sort_func))
+        print("\n\nSTARTING")
+        set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns, self.cspm_tree_root)
+        print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
+        """
         f = open(os.path.join('kclotreeminer_output.txt'), 'w')
         for i in range(0, len(all_patterns)):
             print(all_patterns[i][0], all_patterns[i][1])
@@ -64,6 +73,7 @@ class Main:
             f.write(str(all_patterns[i][1])+'\n')
         # f.write(str(ct)+'\n')
         print("total patterns ",ct)
+        """
 
     def clo_tree_miner(self, K):
         NODE_MAPPER = return_node_mapper()

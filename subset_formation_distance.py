@@ -17,6 +17,7 @@ def check_subset(big, small):
             not_found += 1
     return not_found
 
+
 def min_operation_subset_dp(larger_pattern, smaller_pattern, INF=100000000):
     dp = {}
     # Base Case
@@ -71,6 +72,8 @@ def subset_distance(a, b):
     else:
         return dp2[len(b)][len(a)]
 
-a = [[1], [2], [3]]
-b = [[4], [5], [3]]
-print(subset_distance(a,b))
+
+if __name__ == "__main__":
+    a = [[1], [2], [3]]
+    b = [[4], [5], [3]]
+    print(subset_distance(a,b))

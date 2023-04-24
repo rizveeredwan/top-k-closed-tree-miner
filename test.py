@@ -11,3 +11,13 @@ print(d)
 u = ((2,3))
 v = (3,4)
 print(u+v)
+
+def func(list, idx1,idx2):
+ temp = list[idx1]
+ list[idx1] = list[idx2]
+ list[idx2] = temp
+
+
+a = [[1, 2], [3, 4]]
+a.reverse()
+print(a)
