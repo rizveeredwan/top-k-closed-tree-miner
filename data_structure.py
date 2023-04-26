@@ -231,6 +231,19 @@ class Caphe:
 
         print()
 
+    def print_all_closed_patterns(self, support_table_entry):
+        all_support = list(support_table_entry.caphe_node_dict.keys())
+        all_support.sort(reverse=True)
+        for i in range(0, len(all_support)):
+            print(f"support = {all_support[i]}")
+            caphe_node = support_table_entry.caphe_node_dict[all_support[i]]
+            if caphe_node.stored_patterns['closed'] is not None:
+                lengths = list(caphe_node.stored_patterns['closed'].keys())
+                lengths.sort(reverse=True)
+                for j in range(0, len(lengths)):
+                    print(f"length = {lengths[j]}")
+                    caphe_node.stored_patterns["closed"][lengths[j]][0].print_connected_blocks(
+                        head=caphe_node.stored_patterns["closed"][lengths[j]][0])
 
 class CapheNode:
     # Will hold both candidates and closed patterns using PatternBlock DS
@@ -261,8 +274,8 @@ class CapheNode:
         else:
             # closed
             type_idx = "closed"
-            pb = PatternBlock(pattern=pattern, cspm_tree_node_bitset=None,
-                              cspm_tree_nodes=None, projection_status=None, s_ex=None,
+            pb = PatternBlock(pattern=pattern, cspm_tree_node_bitset=cspm_tree_node_bitset,
+                              cspm_tree_nodes=cspm_tree_nodes, projection_status=projection_status, s_ex=None,
                               i_ex=None, closed_flag=1)
         count = calculate_number_of_characters(pattern=pattern)
         if caphe_node.stored_patterns[type_idx] is None:

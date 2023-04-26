@@ -1,7 +1,7 @@
 def check_projection_status(projection_status):
     for i in range(0, len(projection_status)):
         if projection_status[i] == 0:
-            return False # This pattern's all the projections are not completete
+            return False  # This pattern's all the projections are not completete
     return True
 
 
@@ -51,38 +51,57 @@ def two_pattern_enclose_check(A, B):
 
 def absorption_check(projection_node_a, projection_node_b):
     if len(projection_node_a) != len(projection_node_b):
-        return False # projection nodes are not same
+        return False  # projection nodes are not same
     for i in range(0, len(projection_node_a)):
         if projection_node_a[i] == projection_node_b[i]:
             continue
         else:
-            return False # projection nodes are not same
-    return True # all the projection nodes are the same
+            return False  # projection nodes are not same
+    return True  # all the projection nodes are the same
 
 
 def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph_node, pattern_type):
+    enclosed = []
+    if str(pattern) == str([[4], [2], [4]]):
+        print(f"YES IT CAME {projection_status}")
     enclosure_verdict = check_projection_status(projection_status=projection_status)
     if enclosure_verdict is False:
-        return
+        return enclosed
     # projection is complete
     length = calculate_length(pattern=pattern)
-    # will search in 1-less length
-    if caph_node.stored_patterns[pattern_type] is not None and \
-            caph_node.stored_patterns[pattern_type].get(length-1) is not None:
-        head = caph_node.stored_patterns[pattern_type][length-1][0]
-        while head is not None:
-            small_patt = head.pattern
-            big_patt = pattern
-            if small_patt is not None and check_projection_status(head.projection_status) is True:
-                # not empty pattern and projection is complete - can check now
-                enclosure_verdict = two_pattern_enclose_check(A=big_patt, B=small_patt)
-                if enclosure_verdict is True: # enclosed
-                    head.closed_flag = 0 # can never be closed
-                    if big_patt[-1][-1] == small_patt[-1][-1]: # last event matched - might be absorbed
-                        absorption_verdict = absorption_check(projection_node_a=head.cspm_tree_nodes,
-                                                              projection_node_b=cspm_tree_nodes)
-                        if absorption_verdict is True: # enclosed+absorbed
-                            head.s_ex_needed = 0 # No SE needed
-            head = head.next
-    return
-
+    if caph_node.stored_patterns[pattern_type] is None:
+        return enclosed
+    lengths = caph_node.stored_patterns[pattern_type].keys()
+    cnt = 0
+    for small_len in lengths:
+        cnt += 1
+        if small_len < length:
+            # will search in 1-less length
+            if caph_node.stored_patterns[pattern_type] is not None and \
+                    caph_node.stored_patterns[pattern_type].get(small_len) is not None:
+                head = caph_node.stored_patterns[pattern_type][small_len][0]
+                while head is not None:
+                    small_patt = head.pattern
+                    big_patt = pattern
+                    # candidate
+                    if pattern_type == "candidate" and small_patt is not None and check_projection_status(head.projection_status) is True and head.closed_flag == 1:
+                        # pattern is not None, completely projected and still closed
+                        # not empty pattern and projection is complete - can check now
+                        enclosure_verdict = two_pattern_enclose_check(A=big_patt, B=small_patt)
+                        if enclosure_verdict is True:  # enclosed
+                            enclosed.append(head)
+                            head.closed_flag = 0  # can never be closed
+                            if big_patt[-1][-1] == small_patt[-1][-1]:  # last event matched - might be absorbed
+                                absorption_verdict = absorption_check(projection_node_a=head.cspm_tree_nodes,
+                                                                      projection_node_b=cspm_tree_nodes)
+                                if absorption_verdict is True:  # enclosed+absorbed
+                                    head.s_ex_needed = 0  # No SE needed
+                    # closed
+                    if pattern_type =="closed" and small_patt is not None:
+                        # not empty pattern and projection is complete - can check now
+                        enclosure_verdict = two_pattern_enclose_check(A=big_patt, B=small_patt)
+                        if enclosure_verdict is True:  # enclosed
+                            enclosed.append(head)
+                            head.closed_flag = 0  # can never be closed
+                    head = head.next
+    return enclosed

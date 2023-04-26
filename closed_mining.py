@@ -51,6 +51,8 @@ class KCloTreeMiner:
         # CaPHe data structure
         self.caphe = Caphe()
 
+        self.mined_pattern = 0
+
     def find_i_ex(self, _list, pattern):
         # finding all the items that might extend it as the itemset extension
         last_item = pattern[-1][-1]
@@ -134,6 +136,21 @@ class KCloTreeMiner:
         # projection nodes, node statuses(0/1) and current support
         return projected_node_list, projected_node_status, current_support
 
+    def remove_smaller_same_support_closed_patterns(self, pattern, cspm_tree_nodes, projection_status, caphe_node):
+        enclosed = enclosure_absorption_check(pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
+                                              projection_status=projection_status,
+                                              caph_node=caphe_node, pattern_type="closed")
+
+        # removing all the 1-length small enclosed patterns
+        for i in range(0, len(enclosed)):
+            if str(pattern) == str([[1, 2], [3]]):
+                print(f" enclosed = {enclosed[i].pattern}")
+            deleted_pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=enclosed[i], pattern_type="closed",
+                                        NODE_MAPPER=None)
+            self.mined_pattern -= 1
+            del deleted_pb
+        return
+
     def decision_for_each_pattern(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, projection_status,
                                   s_ex, i_ex, NODE_MAPPER):
         # heap_type = "bounded" means only K unique supports else just put whatever comes
@@ -144,6 +161,8 @@ class KCloTreeMiner:
         # enclosure, absorption check - small to larger patterns are expanding
         # current pattern might enclose/absorb only one length lesser patterns if projection is complete
         caphe_node = self.support_table.caphe_node_dict.get(support)
+
+        # identify the candidates within same support that are closed
         enclosure_absorption_check(pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
                                    projection_status=projection_status,
                                    caph_node=caphe_node, pattern_type="candidate")
@@ -196,10 +215,9 @@ class KCloTreeMiner:
                                            cspm_tree_node_bitset=None, projection_status=projection_status, s_ex=s_ex,
                                            i_ex=i_ex, NODE_MAPPER=NODE_MAPPER)
 
-        mined_pattern = 0
         iteration = 0
-        while mined_pattern < K:
-            print("ITERATION STARTED")
+        while self.mined_pattern < K and len(self.caphe.nodes) > 0:
+            print(f"ITERATION STARTED")
             iteration += 1
             caphe_node = self.caphe.front()  # CaPHe node extraction
             pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=None, pattern_type="candidate",
@@ -208,7 +226,7 @@ class KCloTreeMiner:
                 self.caphe.pop()
                 continue  # with next highest support
             else:
-                #print("trying with  ", pb.pattern, caphe_node.support, pb.projection_status)
+                # print("trying with  ", pb.pattern, caphe_node.support, pb.projection_status)
                 # self.caphe.print()
                 verdict = check_projection_completeness(projection_status=pb.projection_status)
                 if verdict is False:
@@ -225,7 +243,8 @@ class KCloTreeMiner:
                         projection_status=pb.projection_status,
                         item=pb.pattern[-1][-1], minsup=caphe_node.support, type_of_extension=type_of_extension,
                         last_event_bitset=last_event_bitset)
-                    if caphe_node.support > current_support > 0:  # it falls behind min_sup, try to add back in CaPHe
+                    if caphe_node.support > current_support > 0 and len(projection) > 0:
+                        # it falls behind min_sup, try to add back in CaPHe
                         self.decision_for_each_pattern(pattern=pb.pattern, support=current_support,
                                                        cspm_tree_nodes=projection,
                                                        cspm_tree_node_bitset=None, projection_status=projection_status,
@@ -235,18 +254,20 @@ class KCloTreeMiner:
                         pb.cspm_tree_nodes = projection
                         pb.cspm_tree_node_bitset = None
                         pb.projection_status = projection_status
+
+                if len(pb.cspm_tree_nodes) == 0:
+                    # print no valid projection node to work with
+                    continue
+                # its projection is done, it might remove some already found closed patterns
+
                 print(f"starting pattern {pb.pattern} {caphe_node.support} {pb.projection_status}")
+                assert(len(pb.cspm_tree_nodes) > 0)
                 # Here came so we can make extensions
                 last_event_bitset = 0
                 new_s_ex, new_i_ex = [], []
                 s_ex_pbs, i_ex_pbs = [], []
                 if pb.s_ex_needed == 1:
                     for i in range(0, len(pb.s_ex)):
-                        if str(pb.pattern) == str([[3]]) and pb.s_ex[i] == 4:
-                            global  WORKING_WITH_PATTERN
-                            WORKING_WITH_PATTERN = True
-                        else:
-                            WORKING_WITH_PATTERN = False
                         projection, projection_status, current_support = self.pattern_extension(
                             cspm_tree_nodes=pb.cspm_tree_nodes,
                             projection_status=[0 for c in range(len(pb.cspm_tree_nodes))],
@@ -256,7 +277,7 @@ class KCloTreeMiner:
                         print(f" SE extensions  {pb.s_ex[i]} {current_support} {projection_status}")
                         if current_support == caphe_node.support:
                             pb.closed_flag = 0  # can never be closed
-                        if caphe_node.support >= current_support > 0:  # it failed to satisfy
+                        if caphe_node.support >= current_support > 0 and len(projection) > 0:  # it failed to satisfy
                             new_pattern = extend_pattern_string(pattern=pb.pattern, item=pb.s_ex[i], type_ex="SE")
                             new_pb = self.decision_for_each_pattern(
                                 pattern=new_pattern,
@@ -280,7 +301,7 @@ class KCloTreeMiner:
                     print(f" IE extensions  {pb.i_ex[i]} {current_support} {projection_status}")
                     if current_support == caphe_node.support:
                         pb.closed_flag = 0  # can never be closed
-                    if caphe_node.support >= current_support > 0:  # it failed to satisfy
+                    if caphe_node.support >= current_support > 0 and len(projection) > 0:  # it failed to satisfy
                         new_pattern = extend_pattern_string(pattern=pb.pattern, item=pb.i_ex[i], type_ex="IE")
                         new_pb = self.decision_for_each_pattern(
                             pattern=new_pattern,
@@ -292,11 +313,15 @@ class KCloTreeMiner:
                         new_i_ex.append(pb.i_ex[i])
 
             if pb.closed_flag == 1:  # pb is identified as closed pattern
-                mined_pattern += 1
-                # print("mined pattern ", pb.pattern, caphe_node.support)
+                self.mined_pattern += 1
                 caphe_node.insert_pattern(pattern_type="closed", caphe_node=caphe_node, pattern=pb.pattern,
                                           cspm_tree_nodes=pb.cspm_tree_nodes, cspm_tree_node_bitset=None,
-                                          projection_status=None, s_ex=None, i_ex=None, closed_flag=1)
+                                          projection_status=pb.projection_status, s_ex=None, i_ex=None, closed_flag=1)
+                # A closed pattern will enclose smaller sub patterns that have same support ar it
+                self.remove_smaller_same_support_closed_patterns(pattern=pb.pattern,
+                                                                 cspm_tree_nodes=pb.cspm_tree_nodes,
+                                                                 projection_status=pb.projection_status,
+                                                                 caphe_node=caphe_node)
             # updating the s_ex and i_ex blocks
             for i in range(0, len(s_ex_pbs)):
                 new_pb = s_ex_pbs[i]
@@ -318,6 +343,8 @@ class KCloTreeMiner:
             """
             print("ITERATION ENDED")
             # self.caphe.print()
+        print("Printing all the closed patterns")
+        self.caphe.print_all_closed_patterns(self.support_table)
 
 
 if __name__ == "__main__":
