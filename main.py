@@ -6,10 +6,10 @@ from timeit import default_timer as timer
 import debug_functions
 from cspm_tree import CSPMTree, global_node_count, return_node_mapper
 from database import Database
-from debug_functions import DebugFunctions
-from mining_algorithm import KCloTreeMiner
+from closed_mining import KCloTreeMiner
 
 from maximal_pattern_find import *
+from closed_mining import *
 
 """
 # Extension Convention
@@ -64,6 +64,11 @@ class Main:
         all_patterns.sort(key=functools.cmp_to_key(debug_functions.pattern_sort_func))
         print("\n\nSTARTING")
         set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns, self.cspm_tree_root)
+        # print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
+        set_of_maximal_pattern = {}
+        for support in group_of_patterns:
+            set_of_maximal_pattern[support] = [calculate_maximal_pattern_light_constraint(pattern_cluster=
+                                                                                          group_of_patterns[support])]
         print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
         """
         f = open(os.path.join('kclotreeminer_output.txt'), 'w')
@@ -82,8 +87,8 @@ class Main:
         end = timer()
         print("Algorithm Done")
         # self.print_closed_patterns()
-        self.print_final_closed_patterns()
-        print(f"{end - start}")
+        #self.print_final_closed_patterns()
+        #print(f"{end - start}")
 
 
 if __name__ == '__main__':

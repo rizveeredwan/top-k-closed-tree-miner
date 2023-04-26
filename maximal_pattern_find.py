@@ -93,7 +93,7 @@ class MaximalHeap_ActualPattern:
             del heap[-1]  # last idx deletion
             # print("size after deletion ", len(heap))
         if len(heap) > 0:
-            if node_idx <= (len(heap) - 1): # A valid node 
+            if node_idx <= (len(heap) - 1): # A valid node
                 self.update_in_heap(node=heap[node_idx], heap=heap)  # adjust the replaced node
 
     def front(self, heap):
@@ -334,7 +334,8 @@ def calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns, cspm_roo
 
 def print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_pattern):
     for support in set_of_maximal_pattern:
-        print(f"{support} {len(group_of_pattern[support])}")
+        print(f"{support} {len(group_of_pattern[support])} {len(set_of_maximal_pattern[support])}")
+        print(f"{group_of_pattern[support]}")
         print(set_of_maximal_pattern[support])
 
 

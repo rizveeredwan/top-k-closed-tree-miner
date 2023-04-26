@@ -1,5 +1,5 @@
 import functools
-from pattern_quality_measure import same_subtree_checking
+from pattern_quality_measure_older import same_subtree_checking
 
 
 class DebugFunctions:

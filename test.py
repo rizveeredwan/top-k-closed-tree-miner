@@ -18,6 +18,5 @@ def func(list, idx1,idx2):
  list[idx2] = temp
 
 
-a = [[1, 2], [3, 4]]
-a.reverse()
-print(a)
+a = [1, 2, 3, 4]
+print(a[1:-1])

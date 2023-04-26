@@ -4,8 +4,8 @@ from collections import deque
 import debug_functions
 from debug_functions import DebugFunctions, checking_the_nodes_order
 
-from data_structure import *
-from pattern_quality_measure import *
+from data_structure_older import *
+from pattern_quality_measure_older import *
 
 debug = DebugFunctions()
 
@@ -39,57 +39,55 @@ class KCloTreeMiner:
         # CaPHe data structure
         self.caphe = Caphe()
 
-    def pattern_extension(self, cspm_tree_nodes, item, minsup, type_of_extension, last_event_bitset=None):
+    def pattern_extension(self, cspm_tree_nodes, cspm_tree_node_status, item, minsup, type_of_extension, last_event_bitset=None):
         global WORKING_WITH_PATTERN
         queue = deque([])
         current_support = 0
-        final_list_head = PatternExtensionLinkedList(None, -1)
+        final_list_head = PatternExtensionLinkedList(None, -1, None)
         current = final_list_head
         for i in range(0, len(cspm_tree_nodes)):
-            n = PatternExtensionLinkedList(node=cspm_tree_nodes[i], level=0)
+            assert(cspm_tree_node_status[i] == 0 or cspm_tree_node_status[i] == 1) # intermediate vs completed
+            n = PatternExtensionLinkedList(node=cspm_tree_nodes[i], level=0, projection_status=cspm_tree_node_status[i])
             current.insert(node=n, prev_node=current)
             current = n
             queue.append(n)  # [node, level, base node number for which searching the solution]
             current_support += cspm_tree_nodes[i].count
-        heuristic_support = current_support  # heuristic support for heuristic pruning
         while len(queue) > 0:
-            if current_support < minsup:
-                return None, heuristic_support, current_support  # no node, no possible extension
+            if current_support < minsup: # Fall under expected support threshold
+                break # no node, no possible extension
             n = queue.popleft()
+            if n.projection_status == 1: # already projected node
+                continue
+            assert(n.projection_status == 0) # intermediate processed node
             cspm_tree_node = n.node
             current_support -= n.node.count  # cspm_tree_support reduction
-            if n.level == 0:  # For heuristic calculation
-                heuristic_support -= n.node.count
             down_nodes, down_support = n.node.get_next_link_nodes(node=n.node, item=item)
             # print(f"current_support {current_support} down_support {down_support} {minsup} {down_nodes}")
             if current_support + down_support < minsup:
-                heuristic_support = heuristic_support + down_support
-                return None, heuristic_support, current_support  # no node, no possible extension
+                break  # no node, no possible extension, Fall under expected support threshold
             ll_nodes = final_list_head.replace(old_linked_list_node=n, updated_cspm_tree_nodes=down_nodes)
             for i in range(0, len(ll_nodes)):
                 current_support += ll_nodes[i].node.count
                 if type_of_extension == 0:  # SE
-                    if ll_nodes[i].level == 1:  # First level
-                        heuristic_support += ll_nodes[i].node.count  # updating heuristic for level 1
-                        if ll_nodes[i].node.event_no > cspm_tree_node.event_no:  # condition matched
-                            continue
-                        else:  # in the same event, need to go forward
-                            queue.append(ll_nodes[i])
+                    if ll_nodes[i].node.event_no > cspm_tree_node.event_no:  # condition matched
+                        ll_nodes[i].projection_status = 1 # processed
+                    else:  # in the same event, need to go forward
+                        queue.append(ll_nodes[i])
                 elif type_of_extension == 1:  # IE
                     assert (last_event_bitset is not None)
                     if (ll_nodes[i].node.parent_item_bitset & last_event_bitset) == last_event_bitset:
-                        continue  # condition matched
+                        ll_nodes[i].projection_status = 1 # Processed, condition matched
                     else:  # all the desired items not found in the same event
                         queue.append(ll_nodes[i])
-
-        if current_support < minsup:
-            return None, heuristic_support, current_support  # no node, no possible extension
         current = final_list_head.next_link
-        extended = []
+        projected_node_list = []
+        projected_node_status = []
         while current is not None:
-            extended.append(current.node)
+            projected_node_list.append(current.node)
+            projected_node_status.append(current.projection_status)
             current = current.next_link
-        return extended, heuristic_support, current_support
+        # projection nodes, node statuses(0/1) and current support
+        return projected_node_list, projected_node_status, current_support
 
     def create_key_support_table(self, support):
         # creating entry in the support table for the first time
@@ -192,10 +190,10 @@ class KCloTreeMiner:
                             # this candidate is absorbed by P, it does not need sex
                             L2[i].work_with_sex = False
                             # self.support_table[support].caphe_node.pattern_ll_node[1].delete_node(node=L2[i], base_caphe_node=self.support_table[support].caphe_node)
-        # True/False: Can be/csn not be candidate, None/0: Can be/can never be closed still
+        # True/False: Can be/can not be candidate, None/0: Can be/can never be closed still
         return candidacy_flag, closed_flag
 
-    def decision_for_each_pattern(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, s_ex, i_ex, K,
+    def decision_for_each_pattern(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, projection_status, s_ex, i_ex, K,
                                   NODE_MAPPER):
         # For each pattern the workflow of the decision, where to put, what to set, what to delete
         # print(f"{pattern}, support {support}")
@@ -211,12 +209,12 @@ class KCloTreeMiner:
             # insert pattern as a candidate in the corresponding caphe node
             # if candidacy_verdict == work_with_sex: True means not absorbed, I can try with sex, false means no need,
             # e.g. [[1,2]] absorbs [2] -> [[1,2][4]] ~ [[2][4]] but [1,2,5] may not happen but [2,5] might
-            #
             caphe_node = self.support_table[support].caphe_node
             assert (caphe_node is not None)
             candidate_node_ref = caphe_node.insert_pattern(caphe_node=caphe_node, pattern=pattern,
                                                            cspm_tree_nodes=cspm_tree_nodes,
-                                                           cspm_tree_node_bitset=cspm_tree_node_bitset, s_ex=s_ex,
+                                                           cspm_tree_node_bitset=cspm_tree_node_bitset,
+                                                           projection_status=projection_status, s_ex=s_ex,
                                                            i_ex=i_ex, flag=closed_possible_flag,
                                                            work_with_sex=work_with_sex)
         elif len(self.support_table) == K:
@@ -243,6 +241,7 @@ class KCloTreeMiner:
                 candidate_node_ref = caphe_node.insert_pattern(caphe_node=caphe_node, pattern=pattern,
                                                                cspm_tree_nodes=cspm_tree_nodes,
                                                                cspm_tree_node_bitset=cspm_tree_node_bitset,
+                                                               projection_status=projection_status,
                                                                s_ex=s_ex, i_ex=i_ex, flag=closed_possible_flag,
                                                                work_with_sex=work_with_sex)
 
@@ -395,6 +394,7 @@ class KCloTreeMiner:
         return work_with_sex, flag
 
     def k_clo_tree_miner(self, cspm_tree_root, K=2, NODE_MAPPER=None):
+        # the mining algorithm starting point
         global WORKING_WITH_PATTERN
         minsup = 1  # starting min sup
         # Find frequent 1 itemset
@@ -403,9 +403,6 @@ class KCloTreeMiner:
             for item in cspm_tree_root.down_next_link_ptr:
                 # getting the next link nodes node.nl[alpha] = {}
                 next_link_nodes, support = cspm_tree_root.get_next_link_nodes(node=cspm_tree_root, item=item)
-                # print(cspm_tree_root.node_id, item, next_link_nodes, support)
-                # print(f"item = {item}, support = {support}")
-                # debug.print_set_of_nodes(nodes=next_link_nodes)
                 list_of_items.append([item, support, next_link_nodes])
         # sorting and setting the min sup
         list_of_items.sort(key=lambda x: x[1], reverse=True)
@@ -418,7 +415,7 @@ class KCloTreeMiner:
                 elif cnt == K:
                     last_idx = i - 1
                     break
-        list_of_items = list_of_items[0:last_idx + 1]  # pruning a portion
+        list_of_items = list_of_items[0:last_idx + 1]  # pruning a portion of the highest K unique supports
         s_ex = []
         for i in range(0, len(list_of_items)):
             s_ex.append(list_of_items[i][0])
