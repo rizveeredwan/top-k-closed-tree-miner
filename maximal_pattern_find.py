@@ -179,12 +179,13 @@ def search_projection_nodes(node, pattern, ev, it, projection_nodes):
 
 
 def find_leaf_nodes(current_node, leaf_nodes):
-    if current_node.child_link is None:
-        leaf_nodes.append(current_node)
-        return
+    _sum = 0
     for ev in current_node.child_link:
         for it in current_node.child_link[ev]:
+            _sum += current_node.child_link[ev][it].count
             find_leaf_nodes(current_node=current_node.child_link[ev][it], leaf_nodes=leaf_nodes)
+    if _sum < current_node.count:
+        leaf_nodes.append(current_node) # Pseudo leaf node/leaf node
     return
 
 
