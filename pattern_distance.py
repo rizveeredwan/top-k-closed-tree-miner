@@ -1,4 +1,3 @@
-
 def check_subset(big, small):
     j = 0
     not_found = 0
@@ -73,7 +72,40 @@ def subset_distance(a, b):
         return dp2[len(b)][len(a)]
 
 
+def characters_between_events(ev1, ev2):
+    # checking how many characters are same in between
+    j = 0
+    match = 0
+    for i in range(0, len(ev1)):
+        while j < len(ev2):
+            if ev1[i] == ev2[j]:
+                match += 1
+                break
+            j += 1
+    return match
+
+
+def lcs_distance(a, b):
+    # Longest Common Subsequence based distance
+    dp = {}
+    # Base Case
+    for i in range(0, len(a) + 1):
+        dp[i] = {}
+        for j in range(0, len(b) + 1):
+            dp[i][j] = 0
+    dp[0][0] = 0
+    # iteration
+    for i in range(1, len(a)+1):
+        for j in range(1, len(b)+1):
+            dp[i][j] = dp[i-1][j-1] + characters_between_events(ev1=a[i-1], ev2=b[j-1])
+            dp[i][j] = max(dp[i][j], dp[i-1][j])
+            dp[i][j] = max(dp[i][j], dp[i][j-1])
+    return dp[len(a)][len(b)]/(1.0 * max(number_of_characters(a), number_of_characters(b)))
+
+
+
 if __name__ == "__main__":
     a = [[1], [2], [3]]
-    b = [[4], [5], [3]]
-    print(subset_distance(a,b))
+    b = [[1, 2], [2], [5], [3]]
+    print(lcs_distance(a=a, b=b))
+    # print(subset_distance(a,b))

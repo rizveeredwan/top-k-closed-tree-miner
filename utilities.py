@@ -1,4 +1,5 @@
 def check_projection_status(projection_status):
+    # checking if the pattern is completely projected/having 1 in each projected node
     for i in range(0, len(projection_status)):
         if projection_status[i] == 0:
             return False  # This pattern's all the projections are not completete
@@ -6,6 +7,7 @@ def check_projection_status(projection_status):
 
 
 def calculate_length(pattern):
+    # calculating the number of characters in the pattern
     _sum = 0
     for i in range(0, len(pattern)):
         _sum += len(pattern[i])
@@ -62,8 +64,6 @@ def absorption_check(projection_node_a, projection_node_b):
 
 def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph_node, pattern_type):
     enclosed = []
-    if str(pattern) == str([[4], [2], [4]]):
-        print(f"YES IT CAME {projection_status}")
     enclosure_verdict = check_projection_status(projection_status=projection_status)
     if enclosure_verdict is False:
         return enclosed
@@ -84,7 +84,8 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
                     small_patt = head.pattern
                     big_patt = pattern
                     # candidate
-                    if pattern_type == "candidate" and small_patt is not None and check_projection_status(head.projection_status) is True and head.closed_flag == 1:
+                    if pattern_type == "candidate" and small_patt is not None and check_projection_status(
+                            head.projection_status) is True and head.closed_flag == 1:
                         # pattern is not None, completely projected and still closed
                         # not empty pattern and projection is complete - can check now
                         enclosure_verdict = two_pattern_enclose_check(A=big_patt, B=small_patt)
@@ -97,7 +98,7 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
                                 if absorption_verdict is True:  # enclosed+absorbed
                                     head.s_ex_needed = 0  # No SE needed
                     # closed
-                    if pattern_type =="closed" and small_patt is not None:
+                    if pattern_type == "closed" and small_patt is not None:
                         # not empty pattern and projection is complete - can check now
                         enclosure_verdict = two_pattern_enclose_check(A=big_patt, B=small_patt)
                         if enclosure_verdict is True:  # enclosed
@@ -105,3 +106,66 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
                             head.closed_flag = 0  # can never be closed
                     head = head.next
     return enclosed
+
+
+def find_leaf_nodes(current_node, leaf_nodes):
+    _sum = 0
+    for ev in current_node.child_link:
+        for it in current_node.child_link[ev]:
+            _sum += current_node.child_link[ev][it].count
+            find_leaf_nodes(current_node=current_node.child_link[ev][it], leaf_nodes=leaf_nodes)
+    if _sum < current_node.count:
+        leaf_nodes.append(current_node) # Pseudo leaf node/leaf node
+    return
+
+
+def extract_the_full_transaction(cspm_tree_node):
+    # trying to extract the complete transaction here from leaf to root node
+    tr = []
+    current = cspm_tree_node
+    last_event = None
+    while current is not None:
+        if last_event != current.event_no:
+            if current.item is not None:
+                tr.append([current.item])
+        else:
+            assert (current.item is not None)
+            tr[-1].append(current.item)
+        last_event = current.event_no
+        current = current.parent_node
+    tr.reverse()
+    for i in range(0, len(tr)):
+        tr[i].reverse()
+    return tr
+
+
+def search_projection_nodes(node, pattern, ev, it, projection_nodes):
+    # For the pattern finding its projection nodes in the tree
+    if ev == len(pattern):
+        projection_nodes.append(node)
+        return
+    elif it == len(pattern[ev]):
+        search_projection_nodes(node=node, pattern=pattern, ev=ev + 1, it=0, projection_nodes=projection_nodes)
+    else:
+        choices = []
+        if node.down_next_link_ptr is not None and node.down_next_link_ptr.get(pattern[ev][it]) is not None:
+            start = node.down_next_link_ptr[pattern[ev][it]][0]
+            end = node.down_next_link_ptr[pattern[ev][it]][1]
+            while True:
+                choices.append(start)
+                if start == end:
+                    break
+                start = start.side_next_link_next
+        for i in range(0, len(choices)):
+            if it == 0:  # SE
+                if choices[i].event_no == node.event_no:  # not valid SE
+                    search_projection_nodes(choices[i], pattern, ev, it, projection_nodes)
+                elif choices[i].event_no > node.event_no:  # valid SE
+                    search_projection_nodes(choices[i], pattern, ev, it + 1, projection_nodes)
+            else:  # IE
+                bitset = find_bitset(pattern=pattern, event=ev, it=it)
+                assert (bitset > 0)
+                if (choices[i].parent_item_bitset & bitset) == bitset:  # valid IE
+                    search_projection_nodes(choices[i], pattern, ev, it + 1, projection_nodes)
+                else:  # not valid IE
+                    search_projection_nodes(choices[i], pattern, ev, it, projection_nodes)

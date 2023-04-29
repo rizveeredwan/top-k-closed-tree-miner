@@ -1,11 +1,9 @@
 from data_structure import Caphe, SupportTableEntry, CapheNode, MinHeap, PatternExtensionLinkedList
-from debug_functions import DebugFunctions
-from pattern_quality_measure import enclosure_absorption_check
+from utilities import enclosure_absorption_check
 
 import heapq
 from collections import deque
 
-debug = DebugFunctions()
 
 WORKING_WITH_PATTERN = None
 

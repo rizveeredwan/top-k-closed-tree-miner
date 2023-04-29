@@ -1,5 +1,4 @@
-import functools
-from collections import deque
+from utilities import find_leaf_nodes, extract_the_full_transaction, search_projection_nodes
 
 
 def find_parent_idx_in_heap(number):
@@ -144,69 +143,6 @@ def find_bitset(pattern, event, it):
     for i in range(0, it):
         need = need | (1 << pattern[event][i])
     return need
-
-
-def search_projection_nodes(node, pattern, ev, it, projection_nodes):
-    # For the pattern finding its projection nodes in the tree
-    if ev == len(pattern):
-        projection_nodes.append(node)
-        return
-    elif it == len(pattern[ev]):
-        search_projection_nodes(node=node, pattern=pattern, ev=ev + 1, it=0, projection_nodes=projection_nodes)
-    else:
-        choices = []
-        if node.down_next_link_ptr is not None and node.down_next_link_ptr.get(pattern[ev][it]) is not None:
-            start = node.down_next_link_ptr[pattern[ev][it]][0]
-            end = node.down_next_link_ptr[pattern[ev][it]][1]
-            while True:
-                choices.append(start)
-                if start == end:
-                    break
-                start = start.side_next_link_next
-        for i in range(0, len(choices)):
-            if it == 0:  # SE
-                if choices[i].event_no == node.event_no:  # not valid SE
-                    search_projection_nodes(choices[i], pattern, ev, it, projection_nodes)
-                elif choices[i].event_no > node.event_no:  # valid SE
-                    search_projection_nodes(choices[i], pattern, ev, it + 1, projection_nodes)
-            else:  # IE
-                bitset = find_bitset(pattern=pattern, event=ev, it=it)
-                assert (bitset > 0)
-                if (choices[i].parent_item_bitset & bitset) == bitset:  # valid IE
-                    search_projection_nodes(choices[i], pattern, ev, it + 1, projection_nodes)
-                else:  # not valid IE
-                    search_projection_nodes(choices[i], pattern, ev, it, projection_nodes)
-
-
-def find_leaf_nodes(current_node, leaf_nodes):
-    _sum = 0
-    for ev in current_node.child_link:
-        for it in current_node.child_link[ev]:
-            _sum += current_node.child_link[ev][it].count
-            find_leaf_nodes(current_node=current_node.child_link[ev][it], leaf_nodes=leaf_nodes)
-    if _sum < current_node.count:
-        leaf_nodes.append(current_node) # Pseudo leaf node/leaf node
-    return
-
-
-def extract_the_full_transaction(cspm_tree_node):
-    # trying to extract the complete transaction here
-    tr = []
-    current = cspm_tree_node
-    last_event = None
-    while current is not None:
-        if last_event != current.event_no:
-            if current.item is not None:
-                tr.append([current.item])
-        else:
-            assert (current.item is not None)
-            tr[-1].append(current.item)
-        last_event = current.event_no
-        current = current.parent_node
-    tr.reverse()
-    for i in range(0, len(tr)):
-        tr[i].reverse()
-    return tr
 
 
 def print_maximal_pattern_with_group_of_patterns(maximal_pattern, pattern_idx_list, group_of_patterns, support):
