@@ -138,13 +138,6 @@ def calculate_maximal_pattern_light_constraint(pattern_cluster):
     return maximal_pattern
 
 
-def find_bitset(pattern, event, it):
-    need = 0
-    for i in range(0, it):
-        need = need | (1 << pattern[event][i])
-    return need
-
-
 def print_maximal_pattern_with_group_of_patterns(maximal_pattern, pattern_idx_list, group_of_patterns, support):
     # Printing this maximal pattern is covering which patterns
     print("#### Group vs Maximal ####")

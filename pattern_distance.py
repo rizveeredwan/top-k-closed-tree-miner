@@ -1,3 +1,6 @@
+from utilities import *
+
+
 def check_subset(big, small):
     j = 0
     not_found = 0
@@ -102,6 +105,123 @@ def lcs_distance(a, b):
             dp[i][j] = max(dp[i][j], dp[i][j-1])
     return dp[len(a)][len(b)]/(1.0 * max(number_of_characters(a), number_of_characters(b)))
 
+
+def _intersection(set_a, set_b, projection_order_preserved):
+    _sum = 0
+    if projection_order_preserved is True:
+        # can make the searching faster
+        i, j = 0, 0
+        while i < len(set_a) and j < len(set_b):
+            if set_b[j] == set_a[i]:
+                _sum += set_a[i].count
+                for ev in set_a[i].child_link:
+                    for it in ev:
+                        # saving the difference between the parent's count and children's count
+                        _sum -= set_a[i].child_link[ev][it].count
+                i += 1
+                j += 1
+            else:
+                if set_b[j].node_id < set_a[i].node_id: # need to increase j ptr to get nodes of higher id in set b
+                    j += 1
+                elif set_b[j].node_id > set_a[i].node_id: # this i ptr can not be matched, need to increase i ptr here
+                    i += 1
+        return _sum
+    else:
+        # generic bruteforce searching
+        for i in range(0, len(set_a)):
+            if set_a[i] in set_b:
+                _sum += set_a[i].count
+                for ev in set_a[i].child_link:
+                    for it in ev:
+                        # saving the difference between the parent's count and children's count
+                        _sum -= set_a[i].child_link[ev][it].count
+    return _sum
+
+
+def _union(set_a, set_b, projection_order_preserved):
+    _sum = 0
+    if projection_order_preserved is True:
+        # can make the searching faster
+        i, j = 0, 0
+        while i < len(set_a) or j < len(set_b):
+            if i < len(set_a) and j < len(set_b):
+                if set_b[j] == set_a[i]:
+                    _sum += set_a[i].count
+                    for ev in set_a[i].child_link:
+                        for it in ev:
+                            # saving the difference between the parent's count and children's count
+                            _sum -= set_a[i].child_link[ev][it].count
+                    i += 1
+                    j += 1
+                elif set_a[i].node_id < set_b[j].node_id:
+                    _sum += set_a[i].count
+                    for ev in set_a[i].child_link:
+                        for it in ev:
+                            # saving the difference between the parent's count and children's count
+                            _sum -= set_a[i].child_link[ev][it].count
+                    i += 1
+                elif set_b[j].node_id < set_a[i].node_id:
+                    _sum += set_b[j].count
+                    for ev in set_b[j].child_link:
+                        for it in ev:
+                            # saving the difference between the parent's count and children's count
+                            _sum -= set_b[j].child_link[ev][it].count
+                    j += 1
+            elif i < len(set_a):
+                _sum += set_a[i].count
+                for ev in set_a[i].child_link:
+                    for it in ev:
+                        # saving the difference between the parent's count and children's count
+                        _sum -= set_a[i].child_link[ev][it].count
+                i += 1
+            elif j < len(set_b):
+                _sum += set_b[j].count
+                for ev in set_b[j].child_link:
+                    for it in ev:
+                        # saving the difference between the parent's count and children's count
+                        _sum -= set_b[j].child_link[ev][it].count
+                j += 1
+    else:
+        # generic bruteforce searching
+        _sum = 0
+        for i in range(0, len(set_a)):
+            _sum += set_a[i].count
+            for ev in set_a[i].child_link:
+                for it in ev:
+                    # saving the difference between the parent's count and children's count
+                    _sum -= set_a[i].child_link[ev][it].count
+        for i in range(0, len(set_b)):
+            _sum += set_b[i].count
+            for ev in set_b[i].child_link:
+                for it in ev:
+                    # saving the difference between the parent's count and children's count
+                    _sum -= set_b[i].child_link[ev][it].count
+        _sum = _sum - _intersection(set_a=set_a, set_b=set_b, projection_order_preserved=projection_order_preserved)
+    return _sum
+
+
+def transaction_wise_distance(a, b, cspm_root, projection_order_preserved=False):
+    # Transaction wise distance Metric
+    # First get the projected nodes
+    projection_a = []
+    search_projection_nodes(node=cspm_root, pattern=a, ev=0, it=0, projection_nodes=projection_a)
+    projection_b = []
+    search_projection_nodes(node=cspm_root, pattern=b, ev=0, it=0, projection_nodes=projection_b)
+    # Second get the leaf nodes/Pseudo Leaf nodes
+    leaf_a = []
+    for i in range(0, len(projection_a)):
+        find_leaf_nodes(current_node=projection_a[i], leaf_nodes=leaf_a)
+    leaf_b = []
+    for i in range(0, len(projection_b)):
+        find_leaf_nodes(current_node=projection_b[i], leaf_nodes=leaf_b)
+    # Third calculate the intersection and union
+    projection_order_preserved = check_projection_order(projection_nodes=leaf_a) & check_projection_order(projection_nodes=leaf_b)
+    assert(projection_order_preserved is True)
+    lob = _intersection(set_a=leaf_a, set_b=leaf_b, projection_order_preserved=projection_order_preserved)
+    hor = _union(set_a=leaf_a, set_b=leaf_b, projection_order_preserved=projection_order_preserved)
+    result = 1.0 - (lob/hor*1.0)
+    # Report the metrics output
+    return result
 
 
 if __name__ == "__main__":

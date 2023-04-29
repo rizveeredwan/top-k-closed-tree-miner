@@ -109,13 +109,14 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
 
 
 def find_leaf_nodes(current_node, leaf_nodes):
+    # From the current node reach the leaf nodes
     _sum = 0
     for ev in current_node.child_link:
         for it in current_node.child_link[ev]:
             _sum += current_node.child_link[ev][it].count
             find_leaf_nodes(current_node=current_node.child_link[ev][it], leaf_nodes=leaf_nodes)
     if _sum < current_node.count:
-        leaf_nodes.append(current_node) # Pseudo leaf node/leaf node
+        leaf_nodes.append(current_node)  # Pseudo leaf node/leaf node
     return
 
 
@@ -137,6 +138,14 @@ def extract_the_full_transaction(cspm_tree_node):
     for i in range(0, len(tr)):
         tr[i].reverse()
     return tr
+
+
+def find_bitset(pattern, event, it):
+    # For an event construt its bitset
+    need = 0
+    for i in range(0, it):
+        need = need | (1 << pattern[event][i])
+    return need
 
 
 def search_projection_nodes(node, pattern, ev, it, projection_nodes):
@@ -169,3 +178,13 @@ def search_projection_nodes(node, pattern, ev, it, projection_nodes):
                     search_projection_nodes(choices[i], pattern, ev, it + 1, projection_nodes)
                 else:  # not valid IE
                     search_projection_nodes(choices[i], pattern, ev, it, projection_nodes)
+
+
+def check_projection_order(projection_nodes):
+    # trying to see if all the nodes are projected in the ascending order of their node ids or not
+    for i in range(1, len(projection_nodes)):
+        if projection_nodes[i].node_id > projection_nodes[i - 1].node_id:
+            continue
+        else:
+            return False  # did not preserve the order
+    return True  # maintained the order
