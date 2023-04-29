@@ -1,5 +1,5 @@
 from utilities import *
-
+from math import sqrt
 
 def check_subset(big, small):
     j = 0
@@ -222,6 +222,15 @@ def transaction_wise_distance(a, b, cspm_root, projection_order_preserved=False)
     result = 1.0 - (lob/hor*1.0)
     # Report the metrics output
     return result
+
+
+def distance(a, b, cspm_root):
+    # calculating distance between pattern a and pattern b
+    td = transaction_wise_distance(a, b, cspm_root)
+    lcsd = lcs_distance(a,b)
+    sfd = subset_distance(a,b)
+    value = td * td + lcsd * lcsd + sfd * sfd
+    return sqrt(value)
 
 
 if __name__ == "__main__":
