@@ -21,7 +21,6 @@ from closed_mining import *
 class Main:
     def __init__(self):
         self.cspm_tree_root = CSPMTree()
-        self.debug = DebugFunctions()
         self.mine = KCloTreeMiner()
 
     def read(self, file_name):
@@ -83,7 +82,8 @@ class Main:
     def clo_tree_miner(self, K):
         NODE_MAPPER = return_node_mapper()
         start = timer()
-        self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER)
+        self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER,
+                                   mining_type="generic")
         end = timer()
         print("Algorithm Done")
         # self.print_closed_patterns()

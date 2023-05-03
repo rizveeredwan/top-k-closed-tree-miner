@@ -17,6 +17,6 @@ def func(list, idx1,idx2):
  list[idx1] = list[idx2]
  list[idx2] = temp
 
-
-a = [1, 2, 3, 4]
-print(a[1:-1])
+a = (1,2,3)
+a = a + tuple([-2])
+print(a)
