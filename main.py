@@ -94,4 +94,4 @@ class Main:
 if __name__ == '__main__':
     obj = Main()
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=48)
+    obj.clo_tree_miner(K=15)

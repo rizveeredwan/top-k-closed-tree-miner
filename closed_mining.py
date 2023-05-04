@@ -219,13 +219,16 @@ class KCloTreeMiner:
             return # nothing to add
 
     def cmap_based_pruning(self, pattern, minsup, ext_item, ex_type):
+        extension = True
+        minsup_observed = minsup
         for i in range(0, len(pattern[-1])):
             old_item = pattern[-1][i]
             if self.cmap[ex_type].get(old_item) is not None: # e.g., a
                 if self.cmap[ex_type][old_item].get(ext_item) is not None: # e.g., ab
                     if self.cmap[ex_type][old_item][ext_item] < minsup: # ab's support
-                        return False # it can not do the extension
-        return True # no violation has been observed
+                        extension = False # it can not do the extension
+                        minsup_observed = min(minsup_observed, self.cmap[ex_type][old_item][ext_item])
+        return extension, minsup_observed # no violation has been observed
 
 
     def k_clo_tree_miner(self, cspm_tree_root, K=2, NODE_MAPPER=None, mining_type="generic"):
@@ -305,7 +308,7 @@ class KCloTreeMiner:
                         last_event_bitset = find_last_item_bitset(
                             last_event=pb.pattern[-1][0:-1])  # except the last item all the remaining items
                     # apply cmap pruning
-                    ext_verdict = self.cmap_based_pruning(pattern=exclude_last_item_of_pattern(pb.pattern),
+                    ext_verdict, minsup_observed = self.cmap_based_pruning(pattern=exclude_last_item_of_pattern(pb.pattern),
                                                           minsup=caphe_node.support,
                                                           ext_item=pb.pattern[-1][-1], ex_type=type_of_extension)
                     # ext_verdict = True
@@ -320,7 +323,7 @@ class KCloTreeMiner:
                         # just storing the current status
                         projection = pb.cspm_tree_nodes
                         projection_status = pb.projection_status
-                        current_support = caphe_node.support-1
+                        current_support = min(caphe_node.support-1, minsup_observed)
                         print(f"aschi {current_support} {pb.pattern}")
 
                     # trying to modify CMAP
@@ -355,7 +358,7 @@ class KCloTreeMiner:
                 if pb.s_ex_needed == 1:
                     for i in range(0, len(pb.s_ex)):
                         # apply cmap pruning
-                        ext_verdict = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
+                        ext_verdict, minsup_observed = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
                                                               ext_item=pb.s_ex[i], ex_type="SE")
                         if ext_verdict is True:
                             # it might extend properly
@@ -372,7 +375,7 @@ class KCloTreeMiner:
                             # as projection store (a)(b)'s node, (a)(b)'s complete projection status, by force reducing current support
                             projection = pb.cspm_tree_nodes
                             projection_status = [0 for c in range(len(pb.cspm_tree_nodes))]
-                            current_support = caphe_node.support-1
+                            current_support = min(caphe_node.support-1, minsup_observed)
                             print("DHUKSI 2")
                             print(f"Pruned {pb.pattern} with {pb.s_ex[i]}") # pruned
                         print(f" SE extensions  {pb.s_ex[i]} {current_support} {projection_status} {caphe_node.support}")
@@ -401,7 +404,7 @@ class KCloTreeMiner:
                 last_event_bitset = find_last_item_bitset(last_event=pb.pattern[-1])
                 for i in range(0, len(pb.i_ex)):
                     # apply cmap pruning
-                    ext_verdict = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
+                    ext_verdict, minsup_observed = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
                                                           ext_item=pb.i_ex[i], ex_type="IE")
                     if ext_verdict is True:
                         # I might be able to do IE
@@ -415,7 +418,7 @@ class KCloTreeMiner:
                         # CMAP has pruned from expansion. So, I just store it with a lesser imaginary support
                         projection = pb.cspm_tree_nodes
                         projection_status = [0 for c in range(len(pb.cspm_tree_nodes))]
-                        current_support = caphe_node.support - 1
+                        current_support = min(caphe_node.support - 1, minsup_observed)
                     print(f" IE extensions  {pb.i_ex[i]} {current_support} {projection_status}")
                     # trying to modify CMAP
                     self.cmap_addition(pattern=pb.pattern, support=current_support, item=pb.i_ex[i],
