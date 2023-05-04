@@ -64,13 +64,14 @@ def absorption_check(projection_node_a, projection_node_b):
 
 def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph_node, pattern_type):
     enclosed = []
+    absorbed = []
     enclosure_verdict = check_projection_status(projection_status=projection_status)
     if enclosure_verdict is False:
-        return enclosed
+        return enclosed, absorbed
     # projection is complete
     length = calculate_length(pattern=pattern)
     if caph_node.stored_patterns[pattern_type] is None:
-        return enclosed
+        return enclosed, absorbed
     lengths = caph_node.stored_patterns[pattern_type].keys()
     cnt = 0
     for small_len in lengths:
@@ -97,6 +98,7 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
                                                                       projection_node_b=cspm_tree_nodes)
                                 if absorption_verdict is True:  # enclosed+absorbed
                                     head.s_ex_needed = 0  # No SE needed
+                                    absorbed.append(head) # absorbed
                     # closed
                     if pattern_type == "closed" and small_patt is not None:
                         # not empty pattern and projection is complete - can check now
@@ -105,7 +107,7 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
                             enclosed.append(head)
                             head.closed_flag = 0  # can never be closed
                     head = head.next
-    return enclosed
+    return enclosed, absorbed
 
 
 def find_leaf_nodes(current_node, leaf_nodes):

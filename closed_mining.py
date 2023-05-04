@@ -64,6 +64,7 @@ class KCloTreeMiner:
         self.mined_pattern = 0
         self.mine_nature = "generic"  # generic, group, unique
         self.cmap = {'SE': {}, 'IE': {}} # For the CMAP table
+        self.one_length_pattern_absorption_cache = {} # to track the one length patterns that have been absorbed
 
     def find_i_ex(self, _list, pattern):
         # finding all the items that might extend it as the itemset extension
@@ -150,7 +151,7 @@ class KCloTreeMiner:
         return projected_node_list, projected_node_status, current_support
 
     def remove_smaller_closed_patterns(self, pattern, cspm_tree_nodes, projection_status, caphe_node):
-        enclosed = enclosure_absorption_check(pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
+        enclosed, absorbed = enclosure_absorption_check(pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
                                               projection_status=projection_status,
                                               caph_node=caphe_node, pattern_type="closed")
 
@@ -175,7 +176,7 @@ class KCloTreeMiner:
         caphe_node = self.support_table.caphe_node_dict.get(support)
 
         # identify the candidates within same support that are closed
-        enclosure_absorption_check(pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
+        enclosed, absorbed = enclosure_absorption_check(pattern=pattern, cspm_tree_nodes=cspm_tree_nodes,
                                    projection_status=projection_status,
                                    caph_node=caphe_node, pattern_type="candidate")
         # inserting a new candidate in CaPHe
@@ -185,15 +186,35 @@ class KCloTreeMiner:
                                        cspm_tree_node_bitset=cspm_tree_node_bitset,
                                        projection_status=projection_status, s_ex=s_ex, i_ex=i_ex,
                                        closed_flag=closed_flag)
-        if str(pattern) == str([[4, 6], [1, 2, 3], [3]]):
-            print(f"CAME YES {caphe_node.support}")
+        if (len(pattern) == 2 and len(pattern[0]) == 1 and len(pattern[1]) == 1) or (len(pattern) == 1 and len(pattern[0]) == 2):
+            # A two length pattern has absorbed something (expectation some one length patterns)
+            for i in range(0, len(absorbed)):
+                if len(absorbed[i].pattern) == 1 and len(absorbed[i].pattern[0]) == 1:
+                    # a single length pattern has been absorbed
+                    self.one_length_pattern_absorption_cache[str(pattern)] = absorbed[i].pattern
         return pb
 
     def cmap_addition(self, pattern, support, item, ext_type="SE"):
         if len(pattern) == 1 and len(pattern[0]) == 1:
+            # general case
             if self.cmap[ext_type].get(pattern[-1][-1]) is None:
                 self.cmap[ext_type][pattern[-1][-1]] = {}
             self.cmap[ext_type][pattern[0][0]][item] = support
+        elif (len(pattern) == 1 and len(pattern[0]) == 2) or \
+                (len(pattern) == 2 and len(pattern[0]) == 1 and len(pattern[1]) == 1):
+            if ext_type != "SE":
+                return  # not going through this optimization if not SE
+            if self.cmap[ext_type].get(pattern[-1][-1]) is None:
+                self.cmap[ext_type][pattern[-1][-1]] = {}
+            if self.cmap[ext_type][pattern[-1][-1]].get(item) is None:
+                # two length pattern came but one length did not come, so updating with this value
+                self.cmap[ext_type][pattern[-1][-1]][item] = support
+            else:
+                if self.one_length_pattern_absorption_cache.get(str(pattern)) is not None:
+                    # this 2 length pattern has abosrbed some one length pattern, so updating for that pattern
+                    temp = self.one_length_pattern_absorption_cache.get(str(pattern))
+                    assert(len(temp) == 1 and len(temp[0]) == 1)
+                    self.cmap[ext_type][temp[-1][-1]][item] = support
         else:
             return # nothing to add
 
@@ -336,7 +357,6 @@ class KCloTreeMiner:
                         # apply cmap pruning
                         ext_verdict = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
                                                               ext_item=pb.s_ex[i], ex_type="SE")
-                        ext_verdict = True
                         if ext_verdict is True:
                             # it might extend properly
                             projection, projection_status, current_support = self.pattern_extension(
@@ -383,7 +403,6 @@ class KCloTreeMiner:
                     # apply cmap pruning
                     ext_verdict = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
                                                           ext_item=pb.i_ex[i], ex_type="IE")
-                    ext_verdict = True
                     if ext_verdict is True:
                         # I might be able to do IE
                         projection, projection_status, current_support = self.pattern_extension(
