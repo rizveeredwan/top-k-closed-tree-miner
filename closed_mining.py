@@ -34,6 +34,23 @@ def extend_pattern_string(pattern, item, type_ex):
         new_pattern[-1].append(item)
     return new_pattern
 
+def exclude_last_item_of_pattern(pattern):
+    # excluding last item of the last event
+    new_pattern = []
+    for i in range(0, len(pattern)):
+        if i == (len(pattern)-1):
+            if len(pattern[i]) == 1: # last event will be vanished
+                pass
+            else: # only the last item will be escaped
+                new_pattern.append([])
+                for j in range(0,len(pattern[i])-1):
+                    new_pattern[-1].append(pattern[i][j])
+        else: # generic event append
+            new_pattern.append([])
+            for j in range(0, len(pattern[i])):
+                new_pattern[-1].append(pattern[i][j])
+    return new_pattern
+
 
 class KCloTreeMiner:
     def __init__(self):
@@ -46,7 +63,7 @@ class KCloTreeMiner:
 
         self.mined_pattern = 0
         self.mine_nature = "generic"  # generic, group, unique
-        self.closed_pattern_cache = {}
+        self.cmap = {'SE': {}, 'IE': {}} # For the CMAP table
 
     def find_i_ex(self, _list, pattern):
         # finding all the items that might extend it as the itemset extension
@@ -128,6 +145,7 @@ class KCloTreeMiner:
             projected_node_list.append(current.node)
             projected_node_status.append(current.projection_status)
             current = current.next
+        assert(current_support <= minsup)
         # projection nodes, node statuses(0/1) and current support
         return projected_node_list, projected_node_status, current_support
 
@@ -140,7 +158,7 @@ class KCloTreeMiner:
         for i in range(0, len(enclosed)):
             deleted_pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=enclosed[i], pattern_type="closed",
                                         NODE_MAPPER=None)
-            if self.mine_nature == "generic" or self.mine_nature == "unique":
+            if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                 self.mined_pattern -= 1
             del deleted_pb
         return
@@ -167,11 +185,31 @@ class KCloTreeMiner:
                                        cspm_tree_node_bitset=cspm_tree_node_bitset,
                                        projection_status=projection_status, s_ex=s_ex, i_ex=i_ex,
                                        closed_flag=closed_flag)
+        if str(pattern) == str([[4, 6], [1, 2, 3], [3]]):
+            print(f"CAME YES {caphe_node.support}")
         return pb
+
+    def cmap_addition(self, pattern, support, item, ext_type="SE"):
+        if len(pattern) == 1 and len(pattern[0]) == 1:
+            if self.cmap[ext_type].get(pattern[-1][-1]) is None:
+                self.cmap[ext_type][pattern[-1][-1]] = {}
+            self.cmap[ext_type][pattern[0][0]][item] = support
+        else:
+            return # nothing to add
+
+    def cmap_based_pruning(self, pattern, minsup, ext_item, ex_type):
+        for i in range(0, len(pattern[-1])):
+            old_item = pattern[-1][i]
+            if self.cmap[ex_type].get(old_item) is not None: # e.g., a
+                if self.cmap[ex_type][old_item].get(ext_item) is not None: # e.g., ab
+                    if self.cmap[ex_type][old_item][ext_item] < minsup: # ab's support
+                        return False # it can not do the extension
+        return True # no violation has been observed
+
 
     def k_clo_tree_miner(self, cspm_tree_root, K=2, NODE_MAPPER=None, mining_type="generic"):
         self.mine_nature = mining_type
-        # mining_type = "generic" or "group" or "unique
+        # mining_type = "generic" or "group" or "redundancy_aware"
         # the mining algorithm starting point
         global WORKING_WITH_PATTERN
         # Find frequent 1 itemset
@@ -185,16 +223,18 @@ class KCloTreeMiner:
             list_of_items.append([item, support, next_link_nodes, projection_status])
         # sorting and setting the min sup
         list_of_items.sort(key=lambda x: x[1], reverse=True)
-        cnt = 1
-        last_idx = len(list_of_items) - 1
-        for i in range(1, len(list_of_items)):
-            if list_of_items[i][1] != list_of_items[i - 1][1]:
-                if cnt < K:
-                    cnt += 1
-                elif cnt == K:
-                    last_idx = i - 1
-                    break
-        list_of_items = list_of_items[0:last_idx + 1]  # pruning a portion of the highest K unique supports
+        if mining_type == "generic" or mining_type == "group":
+            # pruning a portion of the highest K unique supports
+            cnt = 1
+            last_idx = len(list_of_items) - 1
+            for i in range(1, len(list_of_items)):
+                if list_of_items[i][1] != list_of_items[i - 1][1]:
+                    if cnt < K:
+                        cnt += 1
+                    elif cnt == K:
+                        last_idx = i - 1
+                        break
+            list_of_items = list_of_items[0:last_idx + 1]
         s_ex = []
         for i in range(0, len(list_of_items)):
             s_ex.append(list_of_items[i][0])
@@ -210,10 +250,18 @@ class KCloTreeMiner:
                                            i_ex=i_ex, NODE_MAPPER=NODE_MAPPER)
 
         iteration = 0
-        while self.mined_pattern < K and len(self.caphe.nodes) > 0:
+        final_support = None
+        last_saved_support = -1
+        while len(self.caphe.nodes) > 0:
             print(f"ITERATION STARTED")
             iteration += 1
             caphe_node = self.caphe.front()  # CaPHe node extraction
+            if self.mine_nature == "generic":
+                if self.mined_pattern >= K: # tracking the last highest support
+                    if last_saved_support > caphe_node.support:
+                        break
+                else:
+                    last_saved_support = caphe_node.support
             pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=None, pattern_type="candidate",
                                 NODE_MAPPER=None)  # pattern extraction
             if pb is None:  # No more candidates
@@ -222,9 +270,10 @@ class KCloTreeMiner:
                     self.mined_pattern += 1
                 continue  # with next highest support
             else:
-                # print("trying with  ", pb.pattern, caphe_node.support, pb.projection_status)
+                print("trying with  ", pb.pattern, caphe_node.support, pb.projection_status)
                 # self.caphe.print()
                 verdict = check_projection_completeness(projection_status=pb.projection_status)
+                print(f"{verdict}")
                 if verdict is False:
                     # parent's projection is not complete
                     if len(pb.pattern[-1]) == 1:  # SE
@@ -234,11 +283,32 @@ class KCloTreeMiner:
                         type_of_extension = "IE"
                         last_event_bitset = find_last_item_bitset(
                             last_event=pb.pattern[-1][0:-1])  # except the last item all the remaining items
-                    projection, projection_status, current_support = self.pattern_extension(
-                        cspm_tree_nodes=pb.cspm_tree_nodes,
-                        projection_status=pb.projection_status,
-                        item=pb.pattern[-1][-1], minsup=caphe_node.support, type_of_extension=type_of_extension,
-                        last_event_bitset=last_event_bitset)
+                    # apply cmap pruning
+                    ext_verdict = self.cmap_based_pruning(pattern=exclude_last_item_of_pattern(pb.pattern),
+                                                          minsup=caphe_node.support,
+                                                          ext_item=pb.pattern[-1][-1], ex_type=type_of_extension)
+                    # ext_verdict = True
+                    if ext_verdict is True:
+                        # worth a shot to try the extension
+                        projection, projection_status, current_support = self.pattern_extension(
+                            cspm_tree_nodes=pb.cspm_tree_nodes,
+                            projection_status=pb.projection_status,
+                            item=pb.pattern[-1][-1], minsup=caphe_node.support, type_of_extension=type_of_extension,
+                            last_event_bitset=last_event_bitset)
+                    else:
+                        # just storing the current status
+                        projection = pb.cspm_tree_nodes
+                        projection_status = pb.projection_status
+                        current_support = caphe_node.support-1
+                        print(f"aschi {current_support} {pb.pattern}")
+
+                    # trying to modify CMAP
+                    self.cmap_addition(pattern=exclude_last_item_of_pattern(pb.pattern), support=current_support,
+                                       item=pb.pattern[-1][-1],
+                                       ext_type=type_of_extension)
+
+                    if current_support == 0: # ab obsolete pattern
+                        continue
                     if caphe_node.support > current_support > 0 and len(projection) > 0:
                         # it falls behind min_sup, try to add back in CaPHe
                         self.decision_for_each_pattern(pattern=pb.pattern, support=current_support,
@@ -255,7 +325,6 @@ class KCloTreeMiner:
                     # print no valid projection node to work with
                     continue
                 # its projection is done, it might remove some already found closed patterns
-
                 print(f"starting pattern {pb.pattern} {caphe_node.support} {pb.projection_status}")
                 assert (len(pb.cspm_tree_nodes) > 0)
                 # Here came so we can make extensions
@@ -264,16 +333,39 @@ class KCloTreeMiner:
                 s_ex_pbs, i_ex_pbs = [], []
                 if pb.s_ex_needed == 1:
                     for i in range(0, len(pb.s_ex)):
-                        projection, projection_status, current_support = self.pattern_extension(
-                            cspm_tree_nodes=pb.cspm_tree_nodes,
-                            projection_status=[0 for c in range(len(pb.cspm_tree_nodes))],
-                            item=pb.s_ex[i], minsup=caphe_node.support,
-                            type_of_extension="SE",
-                            last_event_bitset=last_event_bitset)
-                        print(f" SE extensions  {pb.s_ex[i]} {current_support} {projection_status}")
+                        # apply cmap pruning
+                        ext_verdict = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
+                                                              ext_item=pb.s_ex[i], ex_type="SE")
+                        ext_verdict = True
+                        if ext_verdict is True:
+                            # it might extend properly
+                            projection, projection_status, current_support = self.pattern_extension(
+                                cspm_tree_nodes=pb.cspm_tree_nodes,
+                                projection_status=[0 for c in range(len(pb.cspm_tree_nodes))],
+                                item=pb.s_ex[i], minsup=caphe_node.support,
+                                type_of_extension="SE",
+                                last_event_bitset=last_event_bitset)
+                            print("DHUKSI 1")
+                        else:
+                            # just storing the previous status
+                            # suppose, I shall not extend (a)(b)(c) as (a)(c) falls under minsup from (a)(b)
+                            # as projection store (a)(b)'s node, (a)(b)'s complete projection status, by force reducing current support
+                            projection = pb.cspm_tree_nodes
+                            projection_status = [0 for c in range(len(pb.cspm_tree_nodes))]
+                            current_support = caphe_node.support-1
+                            print("DHUKSI 2")
+                            print(f"Pruned {pb.pattern} with {pb.s_ex[i]}") # pruned
+                        print(f" SE extensions  {pb.s_ex[i]} {current_support} {projection_status} {caphe_node.support}")
+                        # trying to modify CMAP
+                        self.cmap_addition(pattern=pb.pattern, support=current_support, item=pb.s_ex[i],
+                                           ext_type="SE")
+                        # print(self.cmap)
+                        assert(current_support <= caphe_node.support) # current support can not be larger
                         if current_support == caphe_node.support:
                             pb.closed_flag = 0  # can never be closed
                         if caphe_node.support >= current_support > 0 and len(projection) > 0:  # it failed to satisfy
+                            if str(pb.pattern) == str([[4, 6], [1, 2, 3]]) and pb.s_ex[i] == 3:
+                                print("HELL YEAH ", projection_status)
                             new_pattern = extend_pattern_string(pattern=pb.pattern, item=pb.s_ex[i], type_ex="SE")
                             new_pb = self.decision_for_each_pattern(
                                 pattern=new_pattern,
@@ -288,13 +380,29 @@ class KCloTreeMiner:
                 # IE
                 last_event_bitset = find_last_item_bitset(last_event=pb.pattern[-1])
                 for i in range(0, len(pb.i_ex)):
-                    projection, projection_status, current_support = self.pattern_extension(
-                        cspm_tree_nodes=pb.cspm_tree_nodes,
-                        projection_status=[0 for c in range(len(pb.cspm_tree_nodes))],
-                        item=pb.i_ex[i], minsup=caphe_node.support,
-                        type_of_extension="IE",
-                        last_event_bitset=last_event_bitset)
+                    # apply cmap pruning
+                    ext_verdict = self.cmap_based_pruning(pattern=pb.pattern, minsup=caphe_node.support,
+                                                          ext_item=pb.i_ex[i], ex_type="IE")
+                    ext_verdict = True
+                    if ext_verdict is True:
+                        # I might be able to do IE
+                        projection, projection_status, current_support = self.pattern_extension(
+                            cspm_tree_nodes=pb.cspm_tree_nodes,
+                            projection_status=[0 for c in range(len(pb.cspm_tree_nodes))],
+                            item=pb.i_ex[i], minsup=caphe_node.support,
+                            type_of_extension="IE",
+                            last_event_bitset=last_event_bitset)
+                    else:
+                        # CMAP has pruned from expansion. So, I just store it with a lesser imaginary support
+                        projection = pb.cspm_tree_nodes
+                        projection_status = [0 for c in range(len(pb.cspm_tree_nodes))]
+                        current_support = caphe_node.support - 1
                     print(f" IE extensions  {pb.i_ex[i]} {current_support} {projection_status}")
+                    # trying to modify CMAP
+                    self.cmap_addition(pattern=pb.pattern, support=current_support, item=pb.i_ex[i],
+                                       ext_type="IE")
+                    # print(self.cmap)
+                    assert (current_support <= caphe_node.support)  # current support can not be larger
                     if current_support == caphe_node.support:
                         pb.closed_flag = 0  # can never be closed
                     if caphe_node.support >= current_support > 0 and len(projection) > 0:  # it failed to satisfy
@@ -348,12 +456,12 @@ class KCloTreeMiner:
                     if new_i_ex[j] > new_pb.pattern[-1][-1]:
                         new_pb.i_ex.append(new_i_ex[j])
             """
-            if iteration == 50:
+            if iteration == 42:
                 break
             """
             print("ITERATION ENDED")
             # self.caphe.print()
-        print("Printing all the closed patterns")
+        print("Printing all the closed patterns ", self.mined_pattern, len(self.caphe.nodes))
         self.caphe.print_all_closed_patterns(self.support_table)
 
 
