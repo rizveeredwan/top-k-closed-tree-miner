@@ -56,13 +56,14 @@ class Main:
             # linked list version
             val, _list = self.mine.support_table[key].closed_patterns.print()
             group_of_patterns[key] = []
-            ct += (val-1)
+            ct += (val - 1)
             for i in range(0, len(_list)):
                 all_patterns.append((key, str(_list[i][0])))
                 group_of_patterns[key].append(_list[i][0])
         all_patterns.sort(key=functools.cmp_to_key(debug_functions.pattern_sort_func))
         print("\n\nSTARTING")
-        set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns, self.cspm_tree_root)
+        set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns,
+                                                                                  self.cspm_tree_root)
         # print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
         set_of_maximal_pattern = {}
         for support in group_of_patterns:
@@ -79,19 +80,22 @@ class Main:
         print("total patterns ",ct)
         """
 
-    def clo_tree_miner(self, K):
+    def clo_tree_miner(self, K, mining_type="generic"):
+        # mining_type = "generic", "group", "unique"
         NODE_MAPPER = return_node_mapper()
         start = timer()
-        self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K, NODE_MAPPER=NODE_MAPPER,
-                                   mining_type="generic")
+        mined_closed_patterns = self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K,
+                                                           NODE_MAPPER=NODE_MAPPER,
+                                                           mining_type=mining_type)
         end = timer()
         print("Algorithm Done")
+        print(f"{mined_closed_patterns}")
         # self.print_closed_patterns()
-        #self.print_final_closed_patterns()
-        #print(f"{end - start}")
+        # self.print_final_closed_patterns()
+        # print(f"{end - start}")
 
 
 if __name__ == '__main__':
     obj = Main()
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=15)
+    obj.clo_tree_miner(K=40, mining_type="generic")

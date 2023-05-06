@@ -286,12 +286,16 @@ class KCloTreeMiner:
                         break
                 else:
                     last_saved_support = caphe_node.support
+            if self.mine_nature == "group":
+                if self.mined_pattern == K:
+                    break # Already K frequent supports have been tracked
             pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=None, pattern_type="candidate",
                                 NODE_MAPPER=None)  # pattern extraction
             if pb is None:  # No more candidates
                 self.caphe.pop()
                 if self.mine_nature == "group":
                     self.mined_pattern += 1
+                    print(f"patterns with support ended {caphe_node.support}")
                 continue  # with next highest support
             else:
                 print("trying with  ", pb.pattern, caphe_node.support, pb.projection_status)
@@ -485,6 +489,7 @@ class KCloTreeMiner:
             # self.caphe.print()
         print("Printing all the closed patterns ", self.mined_pattern, len(self.caphe.nodes))
         self.caphe.print_all_closed_patterns(self.support_table)
+        return self.caphe.extract_all_closed_patterns(self.support_table)
 
 
 if __name__ == "__main__":

@@ -245,6 +245,27 @@ class Caphe:
                     caphe_node.stored_patterns["closed"][lengths[j]][0].print_connected_blocks(
                         head=caphe_node.stored_patterns["closed"][lengths[j]][0])
 
+    def extract_all_closed_patterns(self, support_table_entry):
+        mined_closed_patterns = {}
+        all_support = list(support_table_entry.caphe_node_dict.keys())
+        all_support.sort(reverse=True)
+        for i in range(0, len(all_support)):
+            mined_closed_patterns[all_support[i]] = []
+            # print(f"support = {all_support[i]}")
+            caphe_node = support_table_entry.caphe_node_dict[all_support[i]]
+            if caphe_node.stored_patterns['closed'] is not None:
+                lengths = list(caphe_node.stored_patterns['closed'].keys())
+                lengths.sort(reverse=True)
+                for j in range(0, len(lengths)):
+                    head = caphe_node.stored_patterns["closed"][lengths[j]][0].next
+                    while head is not None:
+                        mined_closed_patterns[all_support[i]].append(head.pattern)
+                        head = head.next
+            if len(mined_closed_patterns[all_support[i]]) == 0:
+                del mined_closed_patterns[all_support[i]]
+        return mined_closed_patterns
+
+
 class CapheNode:
     # Will hold both candidates and closed patterns using PatternBlock DS
     def __init__(self, support):  # single node multiple pattern

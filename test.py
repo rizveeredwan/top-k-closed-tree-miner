@@ -17,6 +17,10 @@ def func(list, idx1,idx2):
  list[idx1] = list[idx2]
  list[idx2] = temp
 
-a = (1,2,3)
-a = a + tuple([-2])
-print(a)
+import sys
+
+a  = [1, 0, 1, 1, 1, 1]
+b = [True, False, True, True, True, True]
+c="101111"
+d = "".join("1" for i in range(70))
+print(sys.getsizeof(a), sys.getsizeof(b), sys.getsizeof(c), d, sys.getsizeof(d))
