@@ -16,7 +16,7 @@ def find_last_item_bitset(last_event):
 
 def check_projection_completeness(projection_status):
     for i in range(0, len(projection_status)):
-        if projection_status[i] == 0:
+        if projection_status[i] == "0":
             return False  # Not complete
     return True  # complete
 
@@ -103,11 +103,11 @@ class KCloTreeMiner:
         final_list_head = PatternExtensionLinkedList(node=None, projection_status=None)
         current = final_list_head
         for i in range(0, len(cspm_tree_nodes)):
-            assert (projection_status[i] == 0 or projection_status[i] == 1)  # intermediate vs completed
+            assert (projection_status[i] == "0" or projection_status[i] == "1")  # intermediate vs completed
             n = PatternExtensionLinkedList(node=cspm_tree_nodes[i], projection_status=projection_status[i])
             current.insert(node=n, prev_node=current)
             current = n
-            if projection_status[i] == 0:
+            if projection_status[i] == "0":
                 queue.append(n)  # Each PatternExtensionLinkedList object
             current_support += cspm_tree_nodes[i].count
         # print("length ", len(queue))
@@ -120,7 +120,7 @@ class KCloTreeMiner:
             if current_support < minsup:  # Fall under expected support threshold
                 break  # no node, no possible extension
             n = queue.popleft()
-            assert (n.projection_status == 0)  # intermediate processed node
+            assert (n.projection_status == "0")  # intermediate processed node
             cspm_tree_node = n.node
             current_support -= n.node.count  # cspm_tree_support reduction
             down_nodes, down_support = n.node.get_next_link_nodes(node=n.node, item=item)
@@ -130,21 +130,21 @@ class KCloTreeMiner:
                 current_support += ll_nodes[i].node.count
                 if type_of_extension == "SE":  # SE
                     if ll_nodes[i].node.event_no > cspm_tree_node.event_no:  # condition matched
-                        ll_nodes[i].projection_status = 1  # processed
+                        ll_nodes[i].projection_status = "1"  # processed
                     else:  # in the same event, need to go forward
                         queue.append(ll_nodes[i])
                 elif type_of_extension == "IE":  # IE
                     assert (last_event_bitset is not None)
                     if (ll_nodes[i].node.parent_item_bitset & last_event_bitset) == last_event_bitset:
-                        ll_nodes[i].projection_status = 1  # Processed, condition matched
+                        ll_nodes[i].projection_status = "1"  # Processed, condition matched
                     else:  # all the desired items not found in the same event
                         queue.append(ll_nodes[i])
         current = final_list_head.next
         projected_node_list = []
-        projected_node_status = []
+        projected_node_status = ""
         while current is not None:
             projected_node_list.append(current.node)
-            projected_node_status.append(current.projection_status)
+            projected_node_status = projected_node_status + current.projection_status
             current = current.next
         assert(current_support <= minsup)
         # projection nodes, node statuses(0/1) and current support
@@ -243,7 +243,7 @@ class KCloTreeMiner:
         for item in cspm_tree_root.down_next_link_ptr:
             # getting the next link nodes node.nl[alpha] = {}
             next_link_nodes, support = cspm_tree_root.get_next_link_nodes(node=cspm_tree_root, item=item)
-            projection_status = [1 for i in range(0, len(next_link_nodes))]
+            projection_status = "".join("1" for i in range(0, len(next_link_nodes)))
             list_of_items.append([item, support, next_link_nodes, projection_status])
         # sorting and setting the min sup
         list_of_items.sort(key=lambda x: x[1], reverse=True)
@@ -353,7 +353,7 @@ class KCloTreeMiner:
                     # print no valid projection node to work with
                     continue
                 # its projection is done, it might remove some already found closed patterns
-                print(f"starting pattern {pb.pattern} {caphe_node.support} {pb.projection_status}")
+                # print(f"starting pattern {pb.pattern} {caphe_node.support} {pb.projection_status}")
                 assert (len(pb.cspm_tree_nodes) > 0)
                 # Here came so we can make extensions
                 last_event_bitset = 0
@@ -368,21 +368,19 @@ class KCloTreeMiner:
                             # it might extend properly
                             projection, projection_status, current_support = self.pattern_extension(
                                 cspm_tree_nodes=pb.cspm_tree_nodes,
-                                projection_status=[0 for c in range(len(pb.cspm_tree_nodes))],
+                                projection_status="".join("0" for c in range(len(pb.cspm_tree_nodes))),
                                 item=pb.s_ex[i], minsup=caphe_node.support,
                                 type_of_extension="SE",
                                 last_event_bitset=last_event_bitset)
-                            print("DHUKSI 1")
                         else:
                             # just storing the previous status
                             # suppose, I shall not extend (a)(b)(c) as (a)(c) falls under minsup from (a)(b)
                             # as projection store (a)(b)'s node, (a)(b)'s complete projection status, by force reducing current support
                             projection = pb.cspm_tree_nodes
-                            projection_status = [0 for c in range(len(pb.cspm_tree_nodes))]
+                            projection_status = "".join("0" for c in range(len(pb.cspm_tree_nodes)))
                             current_support = min(caphe_node.support-1, minsup_observed)
-                            print("DHUKSI 2")
-                            print(f"Pruned {pb.pattern} with {pb.s_ex[i]}") # pruned
-                        print(f" SE extensions  {pb.s_ex[i]} {current_support} {projection_status} {caphe_node.support}")
+                            # print(f"Pruned {pb.pattern} with {pb.s_ex[i]}") # pruned
+                        # print(f" SE extensions  {pb.s_ex[i]} {current_support} {projection_status} {caphe_node.support}")
                         # trying to modify CMAP
                         self.cmap_addition(pattern=pb.pattern, support=current_support, item=pb.s_ex[i],
                                            ext_type="SE")
@@ -391,8 +389,6 @@ class KCloTreeMiner:
                         if current_support == caphe_node.support:
                             pb.closed_flag = 0  # can never be closed
                         if caphe_node.support >= current_support > 0 and len(projection) > 0:  # it failed to satisfy
-                            if str(pb.pattern) == str([[4, 6], [1, 2, 3]]) and pb.s_ex[i] == 3:
-                                print("HELL YEAH ", projection_status)
                             new_pattern = extend_pattern_string(pattern=pb.pattern, item=pb.s_ex[i], type_ex="SE")
                             new_pb = self.decision_for_each_pattern(
                                 pattern=new_pattern,
@@ -414,16 +410,16 @@ class KCloTreeMiner:
                         # I might be able to do IE
                         projection, projection_status, current_support = self.pattern_extension(
                             cspm_tree_nodes=pb.cspm_tree_nodes,
-                            projection_status=[0 for c in range(len(pb.cspm_tree_nodes))],
+                            projection_status="".join("0" for c in range(len(pb.cspm_tree_nodes))),
                             item=pb.i_ex[i], minsup=caphe_node.support,
                             type_of_extension="IE",
                             last_event_bitset=last_event_bitset)
                     else:
                         # CMAP has pruned from expansion. So, I just store it with a lesser imaginary support
                         projection = pb.cspm_tree_nodes
-                        projection_status = [0 for c in range(len(pb.cspm_tree_nodes))]
+                        projection_status = "".join("0" for c in range(len(pb.cspm_tree_nodes)))
                         current_support = min(caphe_node.support - 1, minsup_observed)
-                    print(f" IE extensions  {pb.i_ex[i]} {current_support} {projection_status}")
+                    # print(f" IE extensions  {pb.i_ex[i]} {current_support} {projection_status}")
                     # trying to modify CMAP
                     self.cmap_addition(pattern=pb.pattern, support=current_support, item=pb.i_ex[i],
                                        ext_type="IE")
@@ -487,8 +483,8 @@ class KCloTreeMiner:
             """
             print("ITERATION ENDED")
             # self.caphe.print()
-        print("Printing all the closed patterns ", self.mined_pattern, len(self.caphe.nodes))
-        self.caphe.print_all_closed_patterns(self.support_table)
+        # print("Printing all the closed patterns ", self.mined_pattern, len(self.caphe.nodes))
+        # self.caphe.print_all_closed_patterns(self.support_table)
         return self.caphe.extract_all_closed_patterns(self.support_table)
 
 

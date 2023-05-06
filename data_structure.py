@@ -18,7 +18,7 @@ class PatternBlock:
         self.pattern = pattern
         self.cspm_tree_node_bitset = cspm_tree_node_bitset  # [1, 2] -> [110]: node ids bitset representation
         self.cspm_tree_nodes = cspm_tree_nodes  # node representation
-        self.projection_status = projection_status  # [0: intermediate processing, 1: processed] will be a list
+        self.projection_status = projection_status  # ["0": intermediate processing, "1": processed] will be a list
         self.s_ex = s_ex  # possible items to expand as sequence extension (SE)
         self.i_ex = i_ex  # possible items to expand as sequence extension (IE)
         self.closed_flag = closed_flag  # [1: Can be closed, 0: can not be closed]
@@ -65,7 +65,7 @@ class PatternExtensionLinkedList:
     # Linkedlist used during pattern extension using breadth-first search
     # to process the nodes during extension in O(N) complexity, no sorting required here
     # all the nodes will follow the same subtree code's ascending order
-    def __init__(self, node, projection_status=1):
+    def __init__(self, node, projection_status="1"):
         self.node = node
         self.prev = None
         self.next = None
@@ -101,12 +101,12 @@ class PatternExtensionLinkedList:
         for i in range(0, len(updated_cspm_tree_nodes)):
             if i == 0:
                 # First delete, then add new one
-                ll_node = PatternExtensionLinkedList(node=updated_cspm_tree_nodes[i], projection_status=0)
+                ll_node = PatternExtensionLinkedList(node=updated_cspm_tree_nodes[i], projection_status="0")
                 self.insert(node=ll_node, prev_node=prev_node)
                 current_node = ll_node
             else:
                 # adding new nodes after current node
-                ll_node = PatternExtensionLinkedList(node=updated_cspm_tree_nodes[i], projection_status=0)
+                ll_node = PatternExtensionLinkedList(node=updated_cspm_tree_nodes[i], projection_status="0")
                 self.insert(node=ll_node, prev_node=current_node)
                 current_node = ll_node
             ll_nodes.append(current_node)  # newly created linked list nodes

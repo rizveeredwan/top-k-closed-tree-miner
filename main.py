@@ -10,6 +10,7 @@ from closed_mining import KCloTreeMiner
 
 from maximal_pattern_find import *
 from closed_mining import *
+from clustering import *
 
 """
 # Extension Convention
@@ -43,33 +44,32 @@ class Main:
         # debug
         # self.debug.sanity_test_next_links(self.cspm_tree_root)
 
-    def print_final_closed_patterns(self):
-        ct = 0
-        all_patterns = []
-        group_of_patterns = {}
-        for key in self.mine.support_table:
-            print(f"support = {key}")
-            """
-            # trie version
-            val, _list = self.mine.support_table[key].closed_patterns_with_trie[0].print_patterns(type=0)
-            """
-            # linked list version
-            val, _list = self.mine.support_table[key].closed_patterns.print()
-            group_of_patterns[key] = []
-            ct += (val - 1)
-            for i in range(0, len(_list)):
-                all_patterns.append((key, str(_list[i][0])))
-                group_of_patterns[key].append(_list[i][0])
-        all_patterns.sort(key=functools.cmp_to_key(debug_functions.pattern_sort_func))
-        print("\n\nSTARTING")
-        set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns,
-                                                                                  self.cspm_tree_root)
-        # print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
-        set_of_maximal_pattern = {}
-        for support in group_of_patterns:
-            set_of_maximal_pattern[support] = [calculate_maximal_pattern_light_constraint(pattern_cluster=
-                                                                                          group_of_patterns[support])]
-        print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
+    def apply_summarizaion(self, mined_closed_patterns, clustering_type="k_means", K=3,
+                           max_number_of_iterations=1000, cspm_root=None, tolerance=5):
+        # example, mined_closed_patterns = {3: [a, b, c], 2: [d, dc] ... }
+        if clustering_type == "k_means":
+            group_of_patterns = []
+            for support in mined_closed_patterns:
+                for i in range(0, len(mined_closed_patterns[support])):
+                    group_of_patterns.append(mined_closed_patterns[support][i])
+            assert (cspm_root is not None)
+            entities = k_centroid_clustering(group_of_patterns=group_of_patterns, K=K,
+                                             max_number_of_iterations=max_number_of_iterations,
+                                             cspm_root=cspm_root,
+                                             tolerance=tolerance)
+            print_cluster_stat(entities=entities, group_of_patterns=group_of_patterns, cspm_root=cspm_root,
+                               intra_dist_flag=True, inter_dist_flag=True)
+
+        else:
+            set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(mined_closed_patterns,
+                                                                                      self.cspm_tree_root)
+            # print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
+            set_of_maximal_pattern = {}
+            for support in mined_closed_patterns:
+                set_of_maximal_pattern[support] = [calculate_maximal_pattern_light_constraint(pattern_cluster=
+                                                                                              mined_closed_patterns[
+                                                                                                  support])]
+            print_set_of_maximal_pattern(set_of_maximal_pattern, mined_closed_patterns)
         """
         f = open(os.path.join('kclotreeminer_output.txt'), 'w')
         for i in range(0, len(all_patterns)):
@@ -80,13 +80,18 @@ class Main:
         print("total patterns ",ct)
         """
 
-    def clo_tree_miner(self, K, mining_type="generic"):
+    def clo_tree_miner(self, K, mining_type="generic", summarize_flag=False, clusterting_type="k_means",
+                       max_number_of_iterations=100, tolerance=5):
         # mining_type = "generic", "group", "unique"
         NODE_MAPPER = return_node_mapper()
         start = timer()
         mined_closed_patterns = self.mine.k_clo_tree_miner(cspm_tree_root=self.cspm_tree_root, K=K,
                                                            NODE_MAPPER=NODE_MAPPER,
                                                            mining_type=mining_type)
+        if mining_type == "group" and summarize_flag is True:
+            self.apply_summarizaion(mined_closed_patterns, K=K, max_number_of_iterations=max_number_of_iterations,
+                                    cspm_root=self.cspm_tree_root,
+                                    tolerance=tolerance, clustering_type=clusterting_type)
         end = timer()
         print("Algorithm Done")
         print(f"{mined_closed_patterns}")
@@ -98,4 +103,5 @@ class Main:
 if __name__ == '__main__':
     obj = Main()
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=40, mining_type="generic")
+    obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_means",
+                       max_number_of_iterations=200)

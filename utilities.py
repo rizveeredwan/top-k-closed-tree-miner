@@ -1,7 +1,7 @@
 def check_projection_status(projection_status):
     # checking if the pattern is completely projected/having 1 in each projected node
     for i in range(0, len(projection_status)):
-        if projection_status[i] == 0:
+        if projection_status[i] == "0":
             return False  # This pattern's all the projections are not completete
     return True
 
@@ -112,11 +112,14 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
 
 def find_leaf_nodes(current_node, leaf_nodes):
     # From the current node reach the leaf nodes
+    assert(current_node is not None)
     _sum = 0
-    for ev in current_node.child_link:
-        for it in current_node.child_link[ev]:
-            _sum += current_node.child_link[ev][it].count
-            find_leaf_nodes(current_node=current_node.child_link[ev][it], leaf_nodes=leaf_nodes)
+    if current_node.child_link is not None:
+        # non leaf node
+        for ev in current_node.child_link:
+            for it in current_node.child_link[ev]:
+                _sum += current_node.child_link[ev][it].count
+                find_leaf_nodes(current_node=current_node.child_link[ev][it], leaf_nodes=leaf_nodes)
     if _sum < current_node.count:
         leaf_nodes.append(current_node)  # Pseudo leaf node/leaf node
     return

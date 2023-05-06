@@ -60,15 +60,11 @@ def number_of_characters(a):
 
 
 def subset_distance(a, b):
-    print(a)
-    print(b)
     num_a = number_of_characters(a)
     num_b = number_of_characters(b)
     INF = num_a + num_b + 10
     dp1 = min_operation_subset_dp(larger_pattern=a, smaller_pattern=b, INF=INF)
     dp2 = min_operation_subset_dp(larger_pattern=b, smaller_pattern=a, INF=INF)
-    print(dp1)
-    print(dp2)
     if dp1[len(a)][len(b)] <= dp2[len(b)][len(a)]:
         return dp1[len(a)][len(b)]
     else:
@@ -114,10 +110,12 @@ def _intersection(set_a, set_b, projection_order_preserved):
         while i < len(set_a) and j < len(set_b):
             if set_b[j] == set_a[i]:
                 _sum += set_a[i].count
-                for ev in set_a[i].child_link:
-                    for it in ev:
-                        # saving the difference between the parent's count and children's count
-                        _sum -= set_a[i].child_link[ev][it].count
+                if set_a[i].child_link is not None:
+                    # has some child node beneath
+                    for ev in set_a[i].child_link:
+                        for it in ev:
+                            # saving the difference between the parent's count and children's count
+                            _sum -= set_a[i].child_link[ev][it].count
                 i += 1
                 j += 1
             else:
@@ -131,10 +129,11 @@ def _intersection(set_a, set_b, projection_order_preserved):
         for i in range(0, len(set_a)):
             if set_a[i] in set_b:
                 _sum += set_a[i].count
-                for ev in set_a[i].child_link:
-                    for it in ev:
-                        # saving the difference between the parent's count and children's count
-                        _sum -= set_a[i].child_link[ev][it].count
+                if set_a[i].child_link is not None:
+                    for ev in set_a[i].child_link:
+                        for it in ev:
+                            # saving the difference between the parent's count and children's count
+                            _sum -= set_a[i].child_link[ev][it].count
     return _sum
 
 
@@ -147,39 +146,44 @@ def _union(set_a, set_b, projection_order_preserved):
             if i < len(set_a) and j < len(set_b):
                 if set_b[j] == set_a[i]:
                     _sum += set_a[i].count
-                    for ev in set_a[i].child_link:
-                        for it in ev:
-                            # saving the difference between the parent's count and children's count
-                            _sum -= set_a[i].child_link[ev][it].count
+                    if set_a[i].child_link is not None:
+                        for ev in set_a[i].child_link:
+                            for it in ev:
+                                # saving the difference between the parent's count and children's count
+                                _sum -= set_a[i].child_link[ev][it].count
                     i += 1
                     j += 1
                 elif set_a[i].node_id < set_b[j].node_id:
                     _sum += set_a[i].count
+                    if set_a[i].child_link is not None:
+                        for ev in set_a[i].child_link:
+                            for it in ev:
+                                # saving the difference between the parent's count and children's count
+                                _sum -= set_a[i].child_link[ev][it].count
+                    i += 1
+                elif set_b[j].node_id < set_a[i].node_id:
+                    _sum += set_b[j].count
+                    if set_b[j].child_link is not None:
+                        for ev in set_b[j].child_link:
+                            for it in ev:
+                                # saving the difference between the parent's count and children's count
+                                _sum -= set_b[j].child_link[ev][it].count
+                    j += 1
+            elif i < len(set_a):
+                _sum += set_a[i].count
+                if set_a[i].child_link is not None:
                     for ev in set_a[i].child_link:
                         for it in ev:
                             # saving the difference between the parent's count and children's count
                             _sum -= set_a[i].child_link[ev][it].count
-                    i += 1
-                elif set_b[j].node_id < set_a[i].node_id:
-                    _sum += set_b[j].count
+                i += 1
+            elif j < len(set_b):
+                _sum += set_b[j].count
+                if set_b[j].child_link is not None:
                     for ev in set_b[j].child_link:
                         for it in ev:
                             # saving the difference between the parent's count and children's count
                             _sum -= set_b[j].child_link[ev][it].count
-                    j += 1
-            elif i < len(set_a):
-                _sum += set_a[i].count
-                for ev in set_a[i].child_link:
-                    for it in ev:
-                        # saving the difference between the parent's count and children's count
-                        _sum -= set_a[i].child_link[ev][it].count
-                i += 1
-            elif j < len(set_b):
-                _sum += set_b[j].count
-                for ev in set_b[j].child_link:
-                    for it in ev:
-                        # saving the difference between the parent's count and children's count
-                        _sum -= set_b[j].child_link[ev][it].count
                 j += 1
     else:
         # generic bruteforce searching
@@ -200,13 +204,15 @@ def _union(set_a, set_b, projection_order_preserved):
     return _sum
 
 
-def transaction_wise_distance(a, b, cspm_root, projection_order_preserved=False):
+def transaction_wise_distance(a, b, cspm_root, projection_a=None, projection_b=None, projection_order_preserved=False):
     # Transaction wise distance Metric
     # First get the projected nodes
-    projection_a = []
-    search_projection_nodes(node=cspm_root, pattern=a, ev=0, it=0, projection_nodes=projection_a)
-    projection_b = []
-    search_projection_nodes(node=cspm_root, pattern=b, ev=0, it=0, projection_nodes=projection_b)
+    if projection_a is None:
+        projection_a = []
+        search_projection_nodes(node=cspm_root, pattern=a, ev=0, it=0, projection_nodes=projection_a)
+    if projection_b is None:
+        projection_b = []
+        search_projection_nodes(node=cspm_root, pattern=b, ev=0, it=0, projection_nodes=projection_b)
     # Second get the leaf nodes/Pseudo Leaf nodes
     leaf_a = []
     for i in range(0, len(projection_a)):
@@ -224,9 +230,9 @@ def transaction_wise_distance(a, b, cspm_root, projection_order_preserved=False)
     return result
 
 
-def distance(a, b, cspm_root):
+def distance(a, b, cspm_root, projection_a=None, projection_b=None):
     # calculating distance between pattern a and pattern b
-    td = transaction_wise_distance(a, b, cspm_root)
+    td = transaction_wise_distance(a, b, cspm_root, projection_a=projection_a, projection_b=projection_b)
     lcsd = lcs_distance(a,b)
     sfd = subset_distance(a,b)
     value = td * td + lcsd * lcsd + sfd * sfd
