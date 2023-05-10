@@ -47,19 +47,22 @@ class Main:
     def apply_summarizaion(self, mined_closed_patterns, clustering_type="k_means", K=3,
                            max_number_of_iterations=1000, cspm_root=None, tolerance=5):
         # example, mined_closed_patterns = {3: [a, b, c], 2: [d, dc] ... }
-        if clustering_type == "k_means":
+        if clustering_type == "k_means" or clustering_type == "k_medoid":
             group_of_patterns = []
             for support in mined_closed_patterns:
                 for i in range(0, len(mined_closed_patterns[support])):
                     group_of_patterns.append(mined_closed_patterns[support][i])
             assert (cspm_root is not None)
-            entities = k_centroid_clustering(group_of_patterns=group_of_patterns, K=K,
-                                             max_number_of_iterations=max_number_of_iterations,
-                                             cspm_root=cspm_root,
-                                             tolerance=tolerance)
+            if clustering_type == "k_means":
+                entities = k_centroid_clustering(group_of_patterns=group_of_patterns, K=K,
+                                                 max_number_of_iterations=max_number_of_iterations,
+                                                 cspm_root=cspm_root,
+                                                 tolerance=tolerance)
+            if clustering_type == "k_medoid":
+                entities = k_medoids_clustering(group_of_patterns=group_of_patterns, K=K, max_number_of_iterations=max_number_of_iterations, cspm_root=cspm_root,
+                                     tolerance=tolerance)
             print_cluster_stat(entities=entities, group_of_patterns=group_of_patterns, cspm_root=cspm_root,
                                intra_dist_flag=True, inter_dist_flag=True, silhouette_flag=True)
-
         else:
             set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(mined_closed_patterns,
                                                                                       self.cspm_tree_root)
@@ -103,5 +106,5 @@ class Main:
 if __name__ == '__main__':
     obj = Main()
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_means",
+    obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
                        max_number_of_iterations=200)

@@ -155,6 +155,7 @@ def divide_into_clusters(k, group_of_patterns, entities, cspm_root, projection_n
     # based on the representatives, we are dividing the patterns into the group of different clusters
     for i in range(0, len(entities)):
         entities[i].cluster_members.clear()
+    total_cost = 0
     for i in range(0, len(group_of_patterns)):
         best_rpr = None
         min_dist = None
@@ -166,11 +167,12 @@ def divide_into_clusters(k, group_of_patterns, entities, cspm_root, projection_n
                 break
             dist = distance(a=patt, b=rpr_pattern, cspm_root=cspm_root, projection_a=projection_nodes[i],
                             projection_b=projection_nodes[entities[j].rpr])
+            total_cost += dist
             if min_dist is None or min_dist > dist:
                 min_dist = dist
                 best_rpr = j
         entities[best_rpr].cluster_members.append(i)  # ith pattern in that cluster
-    return entities
+    return entities, total_cost
 
 
 def find_reprsentative(group_of_patterns, single_entitity, cspm_root, projection_nodes):
@@ -218,7 +220,7 @@ def k_centroid_clustering(group_of_patterns=[], K=3, max_number_of_iterations=10
             new_entity = ClusterEntity(rpr=idx, cluster_members=[])
             entities.append(new_entity)
     # print(f"starting new repr {[entities[j].rpr for j in range(len(entities))]}")
-    entities = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
+    entities,_ = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
                                     cspm_root=cspm_root, projection_nodes=projection_nodes)
     entities.sort(key=lambda x: x.rpr)
     tolerance_cnt = 0
@@ -244,7 +246,7 @@ def k_centroid_clustering(group_of_patterns=[], K=3, max_number_of_iterations=10
         if rpr_change > 0:
             # new representative list has been found, again divide the points based on the distance between the point
             # and the representative
-            entities = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
+            entities,_ = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
                                             cspm_root=cspm_root, projection_nodes=projection_nodes)
             tolerance_cnt = 0
         elif rpr_change == 0:
@@ -255,11 +257,75 @@ def k_centroid_clustering(group_of_patterns=[], K=3, max_number_of_iterations=10
                 # consecutive many iterations did not see the changes, breaking
                 break
             else:
-                entities = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
+                entities,_ = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
                                                 cspm_root=cspm_root, projection_nodes=projection_nodes)
 
     print(f"Number of iterations {i} from {max_number_of_iterations} {[entities[j].rpr for j in range(0, len(entities))]}")
     return entities
+
+
+def k_medoids_clustering(group_of_patterns=[], K=3, max_number_of_iterations=1000, cspm_root=None, tolerance=5):
+    # group_of_patterns need to be a list
+    # pick random k representative patterns
+    entities = []
+    projection_nodes = []
+    for i in range(0, len(group_of_patterns)):
+        projection_nodes.append([])
+        search_projection_nodes(node=cspm_root, pattern=group_of_patterns[i], ev=0, it=0,
+                                projection_nodes=projection_nodes[-1])
+    while len(entities) < K:
+        idx = random.randint(0, len(group_of_patterns) - 1)
+        flag = True
+        for i in range(0, len(entities)):
+            if entities[i].rpr == idx:
+                flag = False
+                break
+        if flag is True:
+            new_entity = ClusterEntity(rpr=idx, cluster_members=[])
+            entities.append(new_entity)
+    # print(f"starting new repr {[entities[j].rpr for j in range(len(entities))]}")
+    entities, total_cost = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
+                                    cspm_root=cspm_root, projection_nodes=projection_nodes)
+    entities.sort(key=lambda x: x.rpr)
+    i = 0
+    tolerance_cnt = 0
+    last_best_cost = total_cost
+    while i <= max_number_of_iterations:
+        print(f"{i}: new repr {[entities[j].rpr for j in range(len(entities))]} total_cost {total_cost}")
+        i += 1
+        idx = random.randint(0, len(entities)-1) # the representative to be changed
+        prev_rpr = entities[idx].rpr
+        while True:
+            new_rpr = random.randint(0, len(group_of_patterns)-1)
+            flag = True
+            for j in range(0,len(entities)):
+                if entities[j].rpr == new_rpr:
+                    flag = False
+                    break
+            if flag is True:
+                entities[idx].rpr = new_rpr
+                break
+        entities, total_cost = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
+                                                    cspm_root=cspm_root, projection_nodes=projection_nodes)
+        if last_best_cost <= total_cost:
+            # previous cost was better
+            entities[idx].rpr = prev_rpr
+            tolerance_cnt += 1
+            # getting the cluster points
+            if tolerance_cnt == tolerance:
+                entities, total_cost = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
+                                                        cspm_root=cspm_root, projection_nodes=projection_nodes)
+                break
+        else: # new cost is better
+            tolerance_cnt = 0
+            last_best_cost = total_cost
+            continue
+        if i == max_number_of_iterations:
+            entities, total_cost = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
+                                                        cspm_root=cspm_root, projection_nodes=projection_nodes)
+    print(f"Number of iterations {i} from {max_number_of_iterations} {[entities[j].rpr for j in range(0, len(entities))]}")
+    return entities
+
 
 
 def summarize_each_group_of_pattern(group_of_patterns, cspm_tree, real_pattern=False):
