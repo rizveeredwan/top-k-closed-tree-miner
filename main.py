@@ -58,7 +58,7 @@ class Main:
                                              cspm_root=cspm_root,
                                              tolerance=tolerance)
             print_cluster_stat(entities=entities, group_of_patterns=group_of_patterns, cspm_root=cspm_root,
-                               intra_dist_flag=True, inter_dist_flag=True)
+                               intra_dist_flag=True, inter_dist_flag=True, silhouette_flag=True)
 
         else:
             set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(mined_closed_patterns,

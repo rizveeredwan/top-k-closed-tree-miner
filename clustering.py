@@ -1,6 +1,7 @@
 # To summarize a group of patterns
 # We can apply K centroid clustering over all the patterns to find K representative patterns
 # We can choose maximal pattern based approach to find representative(s) for each group of pattern
+import csv
 import random
 
 from pattern_distance import distance
@@ -13,6 +14,65 @@ class ClusterEntity:
     def __init__(self, rpr, cluster_members):
         self.rpr = rpr
         self.cluster_members = cluster_members
+
+
+def calculate_a_measure_for_silhouette(group_of_patterns, pattern_idx, entity, cspm_root, projection_nodes):
+    _sum = 0.0
+    cnt = 0
+    for i in range(0, len(entity.cluster_members)):
+        if entity.cluster_members[i] == pattern_idx: # same pattern
+            continue
+        base_pattern = group_of_patterns[pattern_idx]
+        comp_pattern = group_of_patterns[entity.cluster_members[i]]
+        dist = distance(a=base_pattern, b=comp_pattern, cspm_root=cspm_root, projection_a=projection_nodes[pattern_idx],
+                        projection_b=projection_nodes[entity.cluster_members[i]])
+        _sum += dist
+        cnt += 1
+    if cnt == 0:
+        cnt = 1
+    return _sum/(1.0 * cnt)
+
+
+def calculate_b_measure_for_silhouette(group_of_patterns, pattern_idx, entities, entity_idx, cspm_root, projection_nodes):
+    _sum = 0.0
+    cnt = 0
+    for i in range(0, len(entities)):
+        if i == entity_idx: # omitting the patterns of same cluster
+            continue
+        for j in range(0, len(entities[i].cluster_members)):
+            base_pattern = group_of_patterns[pattern_idx]
+            comp_pattern = group_of_patterns[entities[i].cluster_members[j]]
+            dist = distance(a=base_pattern, b=comp_pattern, cspm_root=cspm_root,
+                            projection_a=projection_nodes[pattern_idx],
+                            projection_b=projection_nodes[entities[i].cluster_members[j]])
+            _sum += dist
+            cnt += 1
+    if cnt == 0:
+        cnt = 1
+    return _sum / (1.0 * cnt)
+
+
+def calculate_silhouette_coefficient(group_of_patterns, entities, cspm_root, projection_nodes):
+    # calculating the silhouette coefficients
+    a_measure, b_measure, s_measure = {}, {}, {}
+    for i in range(0, len(group_of_patterns)):
+        a_measure[i] = 0.0
+        b_measure[i] = 0.0
+        s_measure[i] = 0.0
+
+    for i in range(0, len(entities)):
+        for j in range(0, len(entities[i].cluster_members)):
+            a_measure[entities[i].cluster_members[j]] = \
+                calculate_a_measure_for_silhouette(group_of_patterns=group_of_patterns, pattern_idx=entities[i].cluster_members[j],
+                                                   entity=entities[i], cspm_root=cspm_root, projection_nodes=projection_nodes)
+            b_measure[entities[i].cluster_members[j]] =calculate_b_measure_for_silhouette(group_of_patterns=group_of_patterns, pattern_idx=entities[i].cluster_members[j],
+                                               entities=entities, entity_idx=i, cspm_root=cspm_root,
+                                               projection_nodes=projection_nodes)
+    for i in range(0, len(group_of_patterns)):
+        lob = b_measure[i] - a_measure[i]
+        hor = max(1.0, max(a_measure[i], b_measure[i]))
+        s_measure[i] = round(lob/(hor * 1.0), 2)
+    return s_measure
 
 
 def intra_cluster_distance(entity, group_of_patterns, cspm_root, projection_nodes):
@@ -43,11 +103,16 @@ def inter_cluster_distance(entities, group_of_patterns, i, j, cspm_root, project
     return _sum
 
 
-def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=False, inter_dist_flag=False):
+def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=False, inter_dist_flag=False, silhouette_flag=False):
     projection_nodes = []
     for i in range(0, len(group_of_patterns)):
         projection_nodes.append([])
         search_projection_nodes(node=cspm_root, pattern=group_of_patterns[i], ev=0, it=0, projection_nodes=projection_nodes[-1])
+    save_dist = {}
+    for i in range(0, len(entities)):
+        save_dist[i] = {}
+        for j in range(0, len(entities)):
+            save_dist[i][j] = 0
     for i in range(0, len(entities)):
         print(f"{i+1}:rpr {group_of_patterns[entities[i].rpr]}")
         for j in range(0,len(entities[i].cluster_members)):
@@ -55,13 +120,34 @@ def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=F
         if intra_dist_flag is True:
             intra_dis = intra_cluster_distance(entity=entities[i], group_of_patterns=group_of_patterns,
                                                cspm_root=cspm_root, projection_nodes=projection_nodes)
+            save_dist[i][i] = round(intra_dis,2)
             print(f"intra={round(intra_dis, 2)}")
     if inter_dist_flag is True:
         for i in range(0, len(entities)):
             print(f"for {i}: ")
-            for j in range(i, len(entities)):
-                dist = inter_cluster_distance(entities, group_of_patterns, i, j, cspm_root, projection_nodes)
-                print(f"inter={round(dist, 2)}")
+            for j in range(i+1, len(entities)):
+                inter_dist = inter_cluster_distance(entities, group_of_patterns, i, j, cspm_root, projection_nodes)
+                inter_dist = round(inter_dist, 2)
+                print(f"inter={inter_dist}")
+                save_dist[i][j] = inter_dist
+                save_dist[j][i] = inter_dist
+    if silhouette_flag is True:
+        s_measure = calculate_silhouette_coefficient(group_of_patterns, entities, cspm_root, projection_nodes)
+        with open("silhouette.csv", "w", encoding='utf-8', newline='') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(['Serial', 'Pattern', 'Silhouette Coefficient'])
+            for key in s_measure:
+                csv_writer.writerow([key, group_of_patterns[key], s_measure[key]])
+            return
+
+    with open("distance_stat.csv", "w", newline='', encoding='utf-8') as f:
+        _list = []
+        w = csv.writer(f)
+        for i in range(0, len(entities)):
+            _list.clear()
+            for j in range(0, len(entities)):
+                _list.append(save_dist[i][j])
+            w.writerow(_list)
         return
 
 
@@ -75,6 +161,9 @@ def divide_into_clusters(k, group_of_patterns, entities, cspm_root, projection_n
         patt = group_of_patterns[i]
         for j in range(0, len(entities)):
             rpr_pattern = group_of_patterns[entities[j].rpr]
+            if entities[j].rpr == i:
+                best_rpr = j
+                break
             dist = distance(a=patt, b=rpr_pattern, cspm_root=cspm_root, projection_a=projection_nodes[i],
                             projection_b=projection_nodes[entities[j].rpr])
             if min_dist is None or min_dist > dist:

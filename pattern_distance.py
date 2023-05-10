@@ -65,10 +65,10 @@ def subset_distance(a, b):
     INF = num_a + num_b + 10
     dp1 = min_operation_subset_dp(larger_pattern=a, smaller_pattern=b, INF=INF)
     dp2 = min_operation_subset_dp(larger_pattern=b, smaller_pattern=a, INF=INF)
-    if dp1[len(a)][len(b)] <= dp2[len(b)][len(a)]:
-        return dp1[len(a)][len(b)]
+    if dp1[len(a)][len(b)]/(1.0 * num_b+dp1[len(a)][len(b)]) <= dp2[len(b)][len(a)]/(1.0+num_a+dp2[len(b)][len(a)]):
+        return dp1[len(a)][len(b)]/(1.0 * num_b+dp1[len(a)][len(b)])
     else:
-        return dp2[len(b)][len(a)]
+        return dp2[len(b)][len(a)]/(1.0+num_a+dp2[len(b)][len(a)])
 
 
 def characters_between_events(ev1, ev2):
