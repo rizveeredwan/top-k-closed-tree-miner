@@ -106,5 +106,5 @@ class Main:
 if __name__ == '__main__':
     obj = Main()
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
+    obj.clo_tree_miner(K=10, mining_type="redundancy_aware", summarize_flag=True, clusterting_type="k_medoid",
                        max_number_of_iterations=200)

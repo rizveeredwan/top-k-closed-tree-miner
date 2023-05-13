@@ -157,6 +157,7 @@ class KCloTreeMiner:
 
         # removing all the 1-length small enclosed patterns
         for i in range(0, len(enclosed)):
+            print(f"deleting {enclosed[i].pattern} for {pattern}")
             deleted_pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=enclosed[i], pattern_type="closed",
                                         NODE_MAPPER=None)
             if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
@@ -280,7 +281,7 @@ class KCloTreeMiner:
             print(f"ITERATION STARTED")
             iteration += 1
             caphe_node = self.caphe.front()  # CaPHe node extraction
-            if self.mine_nature == "generic":
+            if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                 if self.mined_pattern >= K: # tracking the last highest support
                     if last_saved_support > caphe_node.support:
                         break
@@ -439,7 +440,7 @@ class KCloTreeMiner:
                         new_i_ex.append(pb.i_ex[i])
 
             if pb.closed_flag == 1:  # pb is identified as closed pattern
-                if self.mine_nature == "generic" or self.mine_nature == "unique":
+                if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                     self.mined_pattern += 1
                 caphe_node.insert_pattern(pattern_type="closed", caphe_node=caphe_node, pattern=pb.pattern,
                                           cspm_tree_nodes=pb.cspm_tree_nodes, cspm_tree_node_bitset=None,
@@ -447,15 +448,15 @@ class KCloTreeMiner:
                 # A closed pattern will enclose smaller sub patterns that have same support ar it
                 self.remove_smaller_closed_patterns(pattern=pb.pattern, cspm_tree_nodes=pb.cspm_tree_nodes,
                                                     projection_status=pb.projection_status, caphe_node=caphe_node)
-                if self.mine_nature == "unique":
+                if self.mine_nature == "redundancy_aware":
                     # removing all the CSPs
                     empty_caphe_nodes = []
                     for sup in self.support_table.caphe_node_dict:
-                        if sup < caphe_node.support:
+                        if sup > caphe_node.support:
                             self.remove_smaller_closed_patterns(pattern=pb.pattern, cspm_tree_nodes=pb.cspm_tree_nodes,
                                                                 projection_status=pb.projection_status,
                                                                 caphe_node=self.support_table.caphe_node_dict[sup])
-                            if self.support_table.caphe_node_dict[sup].stored_patterns[0] is None and self.support_table.caphe_node_dict[sup].stored_patterns[1] is None:
+                            if self.support_table.caphe_node_dict.get(sup) is not None and self.support_table.caphe_node_dict[sup].stored_patterns["closed"] is None and self.support_table.caphe_node_dict[sup].stored_patterns["candidate"] is None:
                                 empty_caphe_nodes.append(sup)
                     itr = 0
                     while itr < len(empty_caphe_nodes):
