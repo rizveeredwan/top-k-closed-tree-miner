@@ -6,7 +6,7 @@ import tracemalloc
 import psutil
 
 import debug_functions
-from cspm_tree import CSPMTree, global_node_count, return_node_mapper
+from cspm_tree import CSPMTree, global_node_count, return_node_mapper, set_node_mapper_flag
 from database import Database
 from closed_mining import KCloTreeMiner
 
@@ -22,9 +22,10 @@ from clustering import *
 
 
 class Main:
-    def __init__(self):
+    def __init__(self, HOOK_BITSET_BASED_NODE_PROJECTION=None):
         self.cspm_tree_root = CSPMTree()
         self.mine = KCloTreeMiner()
+        set_node_mapper_flag(HOOK_BITSET_BASED_NODE_PROJECTION)
 
     def read(self, file_name):
         database_object = Database()
@@ -106,11 +107,10 @@ class Main:
         # print(f"{end - start}")
 
 
-
 if __name__ == '__main__':
     # starting the monitoring
     tracemalloc.start()
-    obj = Main()
+    obj = Main(HOOK_BITSET_BASED_NODE_PROJECTION=True)
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
     obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
                        max_number_of_iterations=200)

@@ -6,15 +6,24 @@ debug_obj = DebugFunctions()
 global_node_count = 0
 
 # Node mapper
-NODE_MAPPER = {}
+HOOK_BITSET_BASED_NODE_PROJECTION = None
+NODE_MAPPER = None
 # Two powers
 TWO_POWERS = {} # 4: 2, 8: 3
 
 
 def return_node_mapper():
-    # return {1: node, 10: node, 100: node, .... }
+    # return {1: node, 2: node, 3: node, .... }
     global NODE_MAPPER
     return NODE_MAPPER
+
+
+def set_node_mapper_flag(flag=False):
+    # if flag is not None, then NODE_MAPPER is used
+    global HOOK_BITSET_BASED_NODE_PROJECTION, NODE_MAPPER
+    NODE_MAPPER = {}
+    HOOK_BITSET_BASED_NODE_PROJECTION = flag
+    return
 
 
 class CSPMTree:
@@ -99,9 +108,12 @@ class CSPMTree:
         return save, support
 
     def nextlink_gen_using_dfs(self, node):
-        global global_node_count
+        global global_node_count, NODE_MAPPER, HOOK_BITSET_BASED_NODE_PROJECTION
         global_node_count += 1
         node.node_id = global_node_count
+        if HOOK_BITSET_BASED_NODE_PROJECTION is not None:
+            # if this flag is set, then we store the node mapper
+            NODE_MAPPER[node.node_id] = node
         # generating next links using bfs
         _dict = {}
         node.down_next_link_ptr = None

@@ -193,3 +193,32 @@ def check_projection_order(projection_nodes):
         else:
             return False  # did not preserve the order
     return True  # maintained the order
+
+
+def return_all_projection_nodes(cspm_tree_node_bitset, NODE_MAPPER):
+    # goal to find out all the projection nodes from the bitset storing
+    if type(cspm_tree_node_bitset) == list:
+        return cspm_tree_node_bitset # its a list already
+    assert(NODE_MAPPER is not None)
+    assert(type(cspm_tree_node_bitset) == int)
+    cspm_tree_nodes = []
+    cnt = 0
+    while cspm_tree_node_bitset > 0:
+        rem = cspm_tree_node_bitset % 1
+        cspm_tree_node_bitset = cspm_tree_node_bitset // 2
+        if rem == 1:
+            cspm_tree_nodes.append(NODE_MAPPER[cnt])
+        cnt += 1
+    return cspm_tree_nodes
+
+
+def projection_list_to_number(cspm_tree_nodes):
+    # a list to number representation based on node IDS
+    cspm_tree_node_bitset = 0
+    for i in range(0, len(cspm_tree_nodes)):
+        if i > 0: # to keep order among the nodes
+            assert(cspm_tree_nodes[i].node_id > cspm_tree_nodes[i-1].node_id)
+        cspm_tree_node_bitset = cspm_tree_node_bitset | (1<<cspm_tree_nodes[i].node_id)
+    return cspm_tree_node_bitset
+
+
