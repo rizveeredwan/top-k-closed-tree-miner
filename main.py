@@ -2,6 +2,8 @@ import functools
 import os
 import sys
 from timeit import default_timer as timer
+import tracemalloc
+import psutil
 
 import debug_functions
 from cspm_tree import CSPMTree, global_node_count, return_node_mapper
@@ -59,8 +61,9 @@ class Main:
                                                  cspm_root=cspm_root,
                                                  tolerance=tolerance)
             if clustering_type == "k_medoid":
-                entities = k_medoids_clustering(group_of_patterns=group_of_patterns, K=K, max_number_of_iterations=max_number_of_iterations, cspm_root=cspm_root,
-                                     tolerance=tolerance)
+                entities = k_medoids_clustering(group_of_patterns=group_of_patterns, K=K,
+                                                max_number_of_iterations=max_number_of_iterations, cspm_root=cspm_root,
+                                                tolerance=tolerance)
             print_cluster_stat(entities=entities, group_of_patterns=group_of_patterns, cspm_root=cspm_root,
                                intra_dist_flag=True, inter_dist_flag=True, silhouette_flag=True)
         else:
@@ -103,8 +106,16 @@ class Main:
         # print(f"{end - start}")
 
 
+
 if __name__ == '__main__':
+    # starting the monitoring
+    tracemalloc.start()
     obj = Main()
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=10, mining_type="redundancy_aware", summarize_flag=True, clusterting_type="k_medoid",
+    obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
                        max_number_of_iterations=200)
+    # displaying the memory
+    current, peak = tracemalloc.get_traced_memory()
+    print(f"current = {current / 1024.0} Kib and peak = {peak / 1024.0} Kib")
+    # stopping the library
+    tracemalloc.stop()

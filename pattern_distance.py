@@ -230,17 +230,19 @@ def transaction_wise_distance(a, b, cspm_root, projection_a=None, projection_b=N
     return result
 
 
-def distance(a, b, cspm_root, projection_a=None, projection_b=None):
+def distance(a, b, cspm_root, projection_a=None, projection_b=None, print_flag = False):
     # calculating distance between pattern a and pattern b
     td = transaction_wise_distance(a, b, cspm_root, projection_a=projection_a, projection_b=projection_b)
-    lcsd = lcs_distance(a,b)
+    lcsd = 1.0-lcs_distance(a,b)
     sfd = subset_distance(a,b)
     value = td * td + lcsd * lcsd + sfd * sfd
-    return sqrt(value)
+    if print_flag is True:
+        print(f"td = {td} lcsd = {lcsd} sfd = {sfd}")
+    return sqrt(value), td, lcsd, sfd
 
 
 if __name__ == "__main__":
-    a = [[1], [2], [3]]
-    b = [[1, 2], [2], [5], [3]]
-    print(lcs_distance(a=a, b=b))
+    a = [[2, 3]]
+    b = [[1, 2], [2, 3]]
+    print(subset_distance(a=a, b=b))
     # print(subset_distance(a,b))
