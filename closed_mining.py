@@ -303,6 +303,8 @@ class KCloTreeMiner:
                     last_saved_support = caphe_node.support
             if self.mine_nature == "group":
                 if self.mined_pattern == K:
+                    remove_redundant_smaller_supports_from_dictionary(
+                        caphe_node_dict=self.support_table.caphe_node_dict, min_sup=last_saved_support)
                     break  # Already K frequent supports have been tracked
             pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=None, pattern_type="candidate",
                                 NODE_MAPPER=None)  # pattern extraction
@@ -310,6 +312,7 @@ class KCloTreeMiner:
                 self.caphe.pop()
                 if self.mine_nature == "group":
                     self.mined_pattern += 1
+                    last_saved_support = caphe_node.support # saving the last max support observed
                     print(f"patterns with support ended {caphe_node.support}")
                 continue  # with next highest support
             else:
