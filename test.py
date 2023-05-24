@@ -59,11 +59,11 @@ def f2(var):
 import time
 
 start = time.time()
-ans1 = f1(10987654321890765431234567908765) #
+ans1 = f1(1<<100000 | 1<<1000 | 1 << 1500 | 1 << 789 | 1 << 345) #
 end = time.time()
 print(start, end, end-start)
 start = time.time()
-ans2 = f2(10987654321890765431234567908765)
+ans2 = f2(1<<100000 | 1<<1000 | 1 << 1500 | 1 << 789 | 1 << 345)
 end = time.time()
 print(start, end, end-start)
 assert(ans1 == ans2)

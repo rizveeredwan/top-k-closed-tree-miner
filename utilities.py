@@ -62,12 +62,14 @@ def absorption_check(projection_node_a, projection_node_b):
     return True  # all the projection nodes are the same
 
 
-def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph_node, pattern_type):
+def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph_node, pattern_type, NODE_MAPPER):
     enclosed = []
     absorbed = []
     enclosure_verdict = check_projection_status(projection_status=projection_status)
     if enclosure_verdict is False:
         return enclosed, absorbed
+    if NODE_MAPPER is not None: # extracting the projection nodes
+        cspm_tree_nodes = return_all_projection_nodes(cspm_tree_node_bitset=cspm_tree_nodes, NODE_MAPPER=NODE_MAPPER)
     # projection is complete
     length = calculate_length(pattern=pattern)
     if caph_node.stored_patterns[pattern_type] is None:
@@ -94,7 +96,7 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
                             enclosed.append(head)
                             head.closed_flag = 0  # can never be closed
                             if big_patt[-1][-1] == small_patt[-1][-1]:  # last event matched - might be absorbed
-                                absorption_verdict = absorption_check(projection_node_a=head.cspm_tree_nodes,
+                                absorption_verdict = absorption_check(projection_node_a= head.cspm_tree_nodes if type(head.cspm_tree_nodes) == list else return_all_projection_nodes(cspm_tree_node_bitset=head.cspm_tree_nodes, NODE_MAPPER=NODE_MAPPER) ,
                                                                       projection_node_b=cspm_tree_nodes)
                                 if absorption_verdict is True:  # enclosed+absorbed
                                     head.s_ex_needed = 0  # No SE needed
@@ -202,17 +204,15 @@ def return_all_projection_nodes(cspm_tree_node_bitset, NODE_MAPPER):
     assert(NODE_MAPPER is not None)
     assert(type(cspm_tree_node_bitset) == int)
     cspm_tree_nodes = []
-    cnt = 0
     while cspm_tree_node_bitset > 0:
-        rem = cspm_tree_node_bitset % 1
-        cspm_tree_node_bitset = cspm_tree_node_bitset // 2
-        if rem == 1:
-            cspm_tree_nodes.append(NODE_MAPPER[cnt])
-        cnt += 1
-    return cspm_tree_nodes
+        lsb = cspm_tree_node_bitset ^ (cspm_tree_node_bitset-1) # # LSB and some small bits might be set
+        lsb = cspm_tree_node_bitset & lsb  # only the LSB bit is set
+        cspm_tree_node_bitset = cspm_tree_node_bitset ^ lsb  # LSB is off
+        cspm_tree_nodes.append(NODE_MAPPER[lsb])
+    return cspm_tree_nodes # has converted to a list
 
 
-def projection_list_to_number(cspm_tree_nodes):
+def projection_node_list_to_number(cspm_tree_nodes):
     # a list to number representation based on node IDS
     cspm_tree_node_bitset = 0
     for i in range(0, len(cspm_tree_nodes)):
@@ -220,5 +220,28 @@ def projection_list_to_number(cspm_tree_nodes):
             assert(cspm_tree_nodes[i].node_id > cspm_tree_nodes[i-1].node_id)
         cspm_tree_node_bitset = cspm_tree_node_bitset | (1<<cspm_tree_nodes[i].node_id)
     return cspm_tree_node_bitset
+
+
+def verify_if_projection_list_contains_members(projection):
+    if type(projection) == list:
+        if len(projection) > 0:
+            return True
+        return False
+    if type(projection) == int:
+        if projection > 0:
+            return True
+        return False
+
+def remove_smaller_supports_from_dictionary():
+    # After getting K, remove the others
+    pass
+
+
+def convert_all_closed_patterns_projection_num_to_list(caphe_node_dict, min_sup):
+    keys = list(caphe_node_dict.keys())
+    i = 0
+    for i in range(0, len(keys)):
+        if keys[i] < min_sup:
+            del caphe_node_dict[keys[i]]
 
 

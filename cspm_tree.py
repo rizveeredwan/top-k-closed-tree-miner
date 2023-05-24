@@ -21,7 +21,8 @@ def return_node_mapper():
 def set_node_mapper_flag(flag=False):
     # if flag is not None, then NODE_MAPPER is used
     global HOOK_BITSET_BASED_NODE_PROJECTION, NODE_MAPPER
-    NODE_MAPPER = {}
+    if flag is True:
+        NODE_MAPPER = {}
     HOOK_BITSET_BASED_NODE_PROJECTION = flag
     return
 
@@ -112,8 +113,8 @@ class CSPMTree:
         global_node_count += 1
         node.node_id = global_node_count
         if HOOK_BITSET_BASED_NODE_PROJECTION is not None:
-            # if this flag is set, then we store the node mapper
-            NODE_MAPPER[node.node_id] = node
+            # if this flag is set, then we store the node mapper, we shall use bit based unwrapping technique
+            NODE_MAPPER[1<<node.node_id] = node
         # generating next links using bfs
         _dict = {}
         node.down_next_link_ptr = None

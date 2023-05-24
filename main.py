@@ -1,6 +1,7 @@
 import functools
 import os
 import sys
+import time
 from timeit import default_timer as timer
 import tracemalloc
 import psutil
@@ -109,13 +110,16 @@ class Main:
 
 if __name__ == '__main__':
     # starting the monitoring
+    start_time = time.process_time()
     tracemalloc.start()
     obj = Main(HOOK_BITSET_BASED_NODE_PROJECTION=True)
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
+    obj.clo_tree_miner(K=3, mining_type="generic", summarize_flag=True, clusterting_type="k_medoid",
                        max_number_of_iterations=200)
     # displaying the memory
     current, peak = tracemalloc.get_traced_memory()
     print(f"current = {current / 1024.0} Kib and peak = {peak / 1024.0} Kib")
     # stopping the library
     tracemalloc.stop()
+    end_time = time.process_time()
+    print(f"total elapsed time {end_time-start_time}")
