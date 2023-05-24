@@ -300,7 +300,7 @@ class CapheNode:
                               i_ex=None, closed_flag=1)
         count = calculate_number_of_characters(pattern=pattern)
         if caphe_node.stored_patterns[type_idx] is None:
-            caphe_node.stored_patterns[type_idx] = {}  # 0: {} or 1: {}
+            caphe_node.stored_patterns[type_idx] = {}  # candidate: {} or closed: {}
         if caphe_node.stored_patterns[type_idx].get(count) is None:  # 0 : [pattern length]: Linker start
             head = PatternBlock(pattern=None, cspm_tree_node_bitset=None,
                                 cspm_tree_nodes=None, projection_status=None,

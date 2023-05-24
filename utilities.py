@@ -232,12 +232,25 @@ def verify_if_projection_list_contains_members(projection):
             return True
         return False
 
-def remove_smaller_supports_from_dictionary():
+
+def convert_all_closed_patterns_projection_num_to_list(caphe_node_dict, NODE_MAPPER):
     # After getting K, remove the others
-    pass
+    for key in caphe_node_dict:
+        if caphe_node_dict[key].stored_patterns['closed'] is not None:
+            for _len in caphe_node_dict[key].stored_patterns['closed']:
+                current = caphe_node_dict[key].stored_patterns['closed'][_len]
+                current = current.next # After head
+                while current is not None:
+                    if current.cspm_tree_nodes is not None and type(current.cspm_tree_nodes) == int:
+                        current.cspm_tree_nodes = return_all_projection_nodes(cspm_tree_node_bitset=current.cspm_tree_nodes,
+                                                                              NODE_MAPPER=NODE_MAPPER)
+                    elif current.cspm_tree_nodes is not None and type(current.cspm_tree_nodes) == list:
+                        pass
+                    current = current.next
+    return
 
 
-def convert_all_closed_patterns_projection_num_to_list(caphe_node_dict, min_sup):
+def remove_redundant_smaller_supports_from_dictionary(caphe_node_dict, min_sup):
     keys = list(caphe_node_dict.keys())
     i = 0
     for i in range(0, len(keys)):

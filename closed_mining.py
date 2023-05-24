@@ -1,6 +1,6 @@
 from data_structure import Caphe, SupportTableEntry, CapheNode, MinHeap, PatternExtensionLinkedList
 from utilities import enclosure_absorption_check, projection_node_list_to_number, return_all_projection_nodes, \
-    verify_if_projection_list_contains_members, convert_all_closed_patterns_projection_num_to_list
+    verify_if_projection_list_contains_members, remove_redundant_smaller_supports_from_dictionary
 
 import heapq
 from collections import deque
@@ -296,9 +296,8 @@ class KCloTreeMiner:
             if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                 if self.mined_pattern >= K:  # tracking the last highest support
                     if last_saved_support > caphe_node.support:
-                        convert_all_closed_patterns_projection_num_to_list(
-                            caphe_node_dict=self.support_table.caphe_node_dict,
-                            min_sup=last_saved_support)
+                        remove_redundant_smaller_supports_from_dictionary(
+                            caphe_node_dict=self.support_table.caphe_node_dict, min_sup=last_saved_support)
                         break
                 else:
                     last_saved_support = caphe_node.support
