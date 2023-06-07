@@ -28,6 +28,9 @@ class PatternBlock:
         self.next = None
         self.prev = None
 
+        # for redundancy aware version, storing the pattern's information as well
+        self.enclosed_patterns_of_sml_sup = None
+
     def create_link(self, current_node, new_node):
         if current_node.next is None:
             current_node.next = new_node
@@ -245,24 +248,43 @@ class Caphe:
                     caphe_node.stored_patterns["closed"][lengths[j]][0].print_connected_blocks(
                         head=caphe_node.stored_patterns["closed"][lengths[j]][0])
 
-    def extract_all_closed_patterns(self, support_table_entry):
+    def extract_all_closed_patterns(self, support_table_entry, mining_type="generic", K=None):
         mined_closed_patterns = {}
         all_support = list(support_table_entry.caphe_node_dict.keys())
         all_support.sort(reverse=True)
+        cnt = 0
         for i in range(0, len(all_support)):
             mined_closed_patterns[all_support[i]] = []
             # print(f"support = {all_support[i]}")
             caphe_node = support_table_entry.caphe_node_dict[all_support[i]]
             if caphe_node.stored_patterns['closed'] is not None:
                 lengths = list(caphe_node.stored_patterns['closed'].keys())
-                lengths.sort(reverse=True)
+                lengths.sort(reverse=True) # Large to small length
                 for j in range(0, len(lengths)):
                     head = caphe_node.stored_patterns["closed"][lengths[j]][0].next
                     while head is not None:
-                        mined_closed_patterns[all_support[i]].append(head.pattern)
+                        if mining_type == "redundancy_aware":
+                            if head.enclosed_patterns_of_sml_sup is None:
+                                coverage = 0
+                            else:
+                                coverage = len(head.enclosed_patterns_of_sml_sup)
+                            mined_closed_patterns[all_support[i]].append([head.pattern,coverage]) # tracking how many it has enclosed
+                        else:
+                            mined_closed_patterns[all_support[i]].append(head.pattern) # no enclosure
                         head = head.next
+            if len(mined_closed_patterns[all_support[i]]) > 0:
+                cnt += len(mined_closed_patterns[all_support[i]])
             if len(mined_closed_patterns[all_support[i]]) == 0:
                 del mined_closed_patterns[all_support[i]]
+            if K is not None and cnt > K and mining_type == "redundancy_aware":
+                # redundancy aware, got more pattern than K, need to remove some
+                mined_closed_patterns[all_support[i]].sort(key=lambda x:x[1], reverse=True)
+                while len(mined_closed_patterns[all_support[i]]) > 0 and mined_closed_patterns[all_support[i]][-1][1] == 0:
+                    # no small pattern of larger support coverage by this pattern, removing it
+                    del mined_closed_patterns[all_support[i]][-1]
+                    cnt -= 1
+                    if cnt == K: # K intact pattern is found
+                        break
         return mined_closed_patterns
 
 

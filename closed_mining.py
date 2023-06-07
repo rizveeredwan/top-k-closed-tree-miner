@@ -67,6 +67,7 @@ class KCloTreeMiner:
         self.mine_nature = "generic"  # generic, group, unique
         self.cmap = {'SE': {}, 'IE': {}}  # For the CMAP table
         self.one_length_pattern_absorption_cache = {}  # to track the one length patterns that have been absorbed
+        self.min_support_allowed = None # minimum support allowed for PaMHep
 
     def find_i_ex(self, _list, pattern):
         # finding all the items that might extend it as the itemset extension
@@ -164,14 +165,16 @@ class KCloTreeMiner:
                                                         NODE_MAPPER=NODE_MAPPER)
 
         # removing all the 1-length small enclosed patterns
+        collected_patterns = []
         for i in range(0, len(enclosed)):
             print(f"deleting {enclosed[i].pattern} for {pattern}")
+            collected_patterns.append(enclosed[i].pattern) # collecting the patterns that are deleted (for redundancy aware)
             deleted_pb = caphe_node.pop(caphe_node=caphe_node, deleted_pb=enclosed[i], pattern_type="closed",
                                         NODE_MAPPER=NODE_MAPPER)
             if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                 self.mined_pattern -= 1
             del deleted_pb
-        return
+        return collected_patterns
 
     def decision_for_each_pattern(self, pattern, support, cspm_tree_nodes, cspm_tree_node_bitset, projection_status,
                                   s_ex, i_ex, NODE_MAPPER):
@@ -270,6 +273,7 @@ class KCloTreeMiner:
                         cnt += 1
                     elif cnt == K:
                         last_idx = i - 1
+                        self.min_support_allowed = list_of_items[i-1][1]
                         break
             list_of_items = list_of_items[0:last_idx + 1]
         s_ex = []
@@ -423,6 +427,9 @@ class KCloTreeMiner:
                             pb.closed_flag = 0  # can never be closed
                         if caphe_node.support >= current_support > 0 and verify_if_projection_list_contains_members(
                                 projection=projection):  # it failed to satisfy
+                            # applying the bounding of min_support_allowed for PaMHep
+                            if self.mine_nature == "generic" or self.mine_nature == "group":
+                                pass 
                             new_pattern = extend_pattern_string(pattern=pb.pattern, item=pb.s_ex[i], type_ex="SE")
                             new_pb = self.decision_for_each_pattern(
                                 pattern=new_pattern,
@@ -478,7 +485,7 @@ class KCloTreeMiner:
             if pb.closed_flag == 1:  # pb is identified as closed pattern
                 if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                     self.mined_pattern += 1
-                caphe_node.insert_pattern(pattern_type="closed", caphe_node=caphe_node, pattern=pb.pattern,
+                stored_closed_pb = caphe_node.insert_pattern(pattern_type="closed", caphe_node=caphe_node, pattern=pb.pattern,
                                           cspm_tree_nodes=pb.cspm_tree_nodes if NODE_MAPPER is None else projection_node_list_to_number(
                                               pb.cspm_tree_nodes),
                                           cspm_tree_node_bitset=None,
@@ -492,10 +499,16 @@ class KCloTreeMiner:
                     empty_caphe_nodes = []
                     for sup in self.support_table.caphe_node_dict:
                         if sup > caphe_node.support:
-                            self.remove_smaller_closed_patterns(pattern=pb.pattern, cspm_tree_nodes=pb.cspm_tree_nodes,
+                            collected_patterns = self.remove_smaller_closed_patterns(pattern=pb.pattern, cspm_tree_nodes=pb.cspm_tree_nodes,
                                                                 projection_status=pb.projection_status,
                                                                 caphe_node=self.support_table.caphe_node_dict[sup],
                                                                 NODE_MAPPER=NODE_MAPPER)
+                            if len(collected_patterns) > 0: # going to store the patterns that are covered also
+                                print(f"COLLECTED {pb.pattern} {collected_patterns}")
+                                if stored_closed_pb.enclosed_patterns_of_sml_sup is None:
+                                    stored_closed_pb.enclosed_patterns_of_sml_sup = []
+                                for j in range(0, len(collected_patterns)):
+                                    stored_closed_pb.enclosed_patterns_of_sml_sup.append(collected_patterns[j])
                             if self.support_table.caphe_node_dict.get(sup) is not None and \
                                     self.support_table.caphe_node_dict[sup].stored_patterns["closed"] is None and \
                                     self.support_table.caphe_node_dict[sup].stored_patterns["candidate"] is None:
@@ -528,7 +541,7 @@ class KCloTreeMiner:
             # self.caphe.print()
         # print("Printing all the closed patterns ", self.mined_pattern, len(self.caphe.nodes))
         # self.caphe.print_all_closed_patterns(self.support_table)
-        return self.caphe.extract_all_closed_patterns(self.support_table)
+        return self.caphe.extract_all_closed_patterns(self.support_table, mining_type=mining_type, K=K)
 
 
 if __name__ == "__main__":
