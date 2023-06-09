@@ -296,6 +296,15 @@ class KCloTreeMiner:
         while len(self.caphe.nodes) > 0:
             print(f"ITERATION STARTED")
             iteration += 1
+            # Debug printing
+            if iteration == 25:
+                print("Debug printing start ", self.mined_pattern)
+                print("Candidate")
+                self.caphe.print_stored_pattern_in_caphe(self.support_table, print_type="candidate", patt_norm=True)
+                print("Closed")
+                self.caphe.print_stored_pattern_in_caphe(self.support_table, print_type="closed", patt_norm=True)
+                print("Debug printing end")
+
             caphe_node = self.caphe.front()  # CaPHe node extraction
             if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                 if self.mined_pattern >= K:  # tracking the last highest support
@@ -429,7 +438,9 @@ class KCloTreeMiner:
                                 projection=projection):  # it failed to satisfy
                             # applying the bounding of min_support_allowed for PaMHep
                             if self.mine_nature == "generic" or self.mine_nature == "group":
-                                pass 
+                                if self.min_support_allowed is not None and current_support < self.min_support_allowed:
+                                    # too small support to work with
+                                    continue
                             new_pattern = extend_pattern_string(pattern=pb.pattern, item=pb.s_ex[i], type_ex="SE")
                             new_pb = self.decision_for_each_pattern(
                                 pattern=new_pattern,
@@ -472,6 +483,11 @@ class KCloTreeMiner:
                         pb.closed_flag = 0  # can never be closed
                     if caphe_node.support >= current_support > 0 and verify_if_projection_list_contains_members(
                             projection=projection):  # it failed to satisfy
+                        # applying the bounding of min_support_allowed for PaMHep
+                        if self.mine_nature == "generic" or self.mine_nature == "group":
+                            if self.min_support_allowed is not None and current_support < self.min_support_allowed:
+                                # too small support to work with
+                                continue
                         new_pattern = extend_pattern_string(pattern=pb.pattern, item=pb.i_ex[i], type_ex="IE")
                         new_pb = self.decision_for_each_pattern(
                             pattern=new_pattern,
@@ -540,7 +556,7 @@ class KCloTreeMiner:
             print("ITERATION ENDED")
             # self.caphe.print()
         # print("Printing all the closed patterns ", self.mined_pattern, len(self.caphe.nodes))
-        # self.caphe.print_all_closed_patterns(self.support_table)
+        # self.caphe.(print_all_closed_patternsself.support_table)
         return self.caphe.extract_all_closed_patterns(self.support_table, mining_type=mining_type, K=K)
 
 

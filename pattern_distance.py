@@ -20,6 +20,31 @@ def check_subset(big, small):
     return not_found
 
 
+def merge_two_events(ev_a, ev_b):
+    i , j = 0, 0
+    new_ev = []
+    while i < len(ev_a) or j < len(ev_b):
+        if i < len(ev_a) and j < len(ev_b):
+            if ev_a[i] < ev_b[j]:
+                new_ev.append(ev_a[i])
+                i += 1 
+            elif ev_a[i] > ev_b[j]:
+                new_ev.append(ev_b[j])
+                j += 1
+            else:
+                new_ev.append(ev_a[i])
+                i += 1
+                j += 1
+        elif i < len(ev_a):
+            new_ev.append(ev_a[i])
+            i += 1
+        elif j < len(ev_b):
+            new_ev.append(ev_b[j])
+            j += 1
+    return new_ev
+
+
+
 def min_operation_subset_dp(larger_pattern, smaller_pattern, INF=100000000):
     dp = {}
     # Base Case
@@ -36,11 +61,31 @@ def min_operation_subset_dp(larger_pattern, smaller_pattern, INF=100000000):
     for i in range(1, len(larger_pattern) + 1):
         for j in range(1, len(smaller_pattern) + 1):
             value = check_subset(big=larger_pattern[i-1], small=smaller_pattern[j-1])
-            if value == 0:
-                dp[i][j] = dp[i - 1][j - 1]
-            else:
-                dp[i][j] = min(dp[i - 1][j], value + dp[i][j - 1])
+            dp[i][j] = min(dp[i - 1][j], value + dp[i-1][j - 1])
     return dp
+
+
+def min_operation_subset_dp_print(dp, larger_pattern, smaller_pattern):
+    merged_pattern = []
+    i, j = len(larger_pattern), len(smaller_pattern)
+    while True:
+        if i == 0:
+            while j > 0:
+                merged_pattern.append(smaller_pattern[j-1])
+                j -= 1
+            break
+        value = check_subset(big=larger_pattern[i - 1], small=smaller_pattern[j - 1])
+        if j>0 and (dp[i][j] == (dp[i-1][j-1]+value)): # itemset
+            new_ev = merge_two_events(ev_a=larger_pattern[i - 1], ev_b=smaller_pattern[j - 1])
+            merged_pattern.append(new_ev)
+            i -= 1
+            j -= 1
+        elif dp[i][j] == dp[i-1][j]:
+            merged_pattern.append(larger_pattern[i-1])
+            i -= 1
+    merged_pattern.reverse()
+    return merged_pattern
+
 
 
 def conversion(a):
@@ -64,11 +109,15 @@ def subset_distance(a, b):
     num_b = number_of_characters(b)
     INF = num_a + num_b + 10
     dp1 = min_operation_subset_dp(larger_pattern=a, smaller_pattern=b, INF=INF)
+    assert(dp1[len(a)][len(b)] <= num_b)
+    # print(dp1[len(a)][len(b)], dp1[len(a)][len(b)]/(num_b*1.0))
     dp2 = min_operation_subset_dp(larger_pattern=b, smaller_pattern=a, INF=INF)
-    if dp1[len(a)][len(b)]/(1.0 * num_b+dp1[len(a)][len(b)]) <= dp2[len(b)][len(a)]/(1.0+num_a+dp2[len(b)][len(a)]):
-        return dp1[len(a)][len(b)]/(1.0 * num_b+dp1[len(a)][len(b)])
+    assert (dp2[len(b)][len(a)] <= num_a)
+    # print(dp2[len(b)][len(a)], dp2[len(b)][len(a)]/(num_a*1.0))
+    if dp1[len(a)][len(b)]/(num_b*1.0) <= dp2[len(b)][len(a)]/(num_a*1.0):
+        return dp1[len(a)][len(b)]/(num_b*1.0), 'a', dp1
     else:
-        return dp2[len(b)][len(a)]/(1.0+num_a+dp2[len(b)][len(a)])
+        return dp2[len(b)][len(a)]/(num_a*1.0), 'b', dp2
 
 
 def characters_between_events(ev1, ev2):
@@ -84,7 +133,7 @@ def characters_between_events(ev1, ev2):
     return match
 
 
-def lcs_distance(a, b):
+def lcs_similarity(a, b):
     # Longest Common Subsequence based distance
     dp = {}
     # Base Case
@@ -233,8 +282,8 @@ def transaction_wise_distance(a, b, cspm_root, projection_a=None, projection_b=N
 def distance(a, b, cspm_root, projection_a=None, projection_b=None, print_flag = False):
     # calculating distance between pattern a and pattern b
     td = transaction_wise_distance(a, b, cspm_root, projection_a=projection_a, projection_b=projection_b)
-    lcsd = 1.0-lcs_distance(a,b)
-    sfd = subset_distance(a,b)
+    lcsd = 1.0 - lcs_similarity(a, b)
+    sfd, _ , _ = subset_distance(a,b)
     value = td * td + lcsd * lcsd + sfd * sfd
     if print_flag is True:
         print(f"td = {td} lcsd = {lcsd} sfd = {sfd}")

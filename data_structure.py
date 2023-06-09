@@ -6,6 +6,18 @@ def calculate_number_of_characters(pattern):
     return _cnt
 
 
+def pattern_normalize(pattern): # to print as normalized pattern
+    _string = "<"
+    for i in range(0, len(pattern)):
+        _string += '('
+        for j in range(0, len(pattern[i])):
+            char = chr((pattern[i][j]-1) + ord('a'))
+            _string += char
+        _string += ')'
+    _string += ">"
+    return _string
+
+
 class SupportTableEntry:
     def __init__(self):
         # linked list version
@@ -56,11 +68,14 @@ class PatternBlock:
         del current
         return
 
-    def print_connected_blocks(self, head):
+    def print_connected_blocks(self, head, patt_norm=False):
         # print all the blocks come after head
         curr = head
         while curr is not None:
-            print(f"{curr.pattern}")
+            if patt_norm is False or curr.pattern is None:
+                print(f"{curr.pattern}")
+            elif patt_norm is True and curr.pattern is not None:
+                print(f"{pattern_normalize(pattern=curr.pattern)}")
             curr = curr.next
 
 
@@ -234,19 +249,20 @@ class Caphe:
 
         print()
 
-    def print_all_closed_patterns(self, support_table_entry):
+    def print_stored_pattern_in_caphe(self, support_table_entry, print_type="closed", patt_norm=False):
         all_support = list(support_table_entry.caphe_node_dict.keys())
         all_support.sort(reverse=True)
         for i in range(0, len(all_support)):
             print(f"support = {all_support[i]}")
             caphe_node = support_table_entry.caphe_node_dict[all_support[i]]
-            if caphe_node.stored_patterns['closed'] is not None:
-                lengths = list(caphe_node.stored_patterns['closed'].keys())
+            if caphe_node.stored_patterns[print_type] is not None:
+                lengths = list(caphe_node.stored_patterns[print_type].keys())
                 lengths.sort(reverse=True)
                 for j in range(0, len(lengths)):
                     print(f"length = {lengths[j]}")
-                    caphe_node.stored_patterns["closed"][lengths[j]][0].print_connected_blocks(
-                        head=caphe_node.stored_patterns["closed"][lengths[j]][0])
+                    caphe_node.stored_patterns[print_type][lengths[j]][0].print_connected_blocks(
+                        head=caphe_node.stored_patterns[print_type][lengths[j]][0], patt_norm=patt_norm)
+
 
     def extract_all_closed_patterns(self, support_table_entry, mining_type="generic", K=None):
         mined_closed_patterns = {}

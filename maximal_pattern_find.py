@@ -1,4 +1,8 @@
 from utilities import find_leaf_nodes, extract_the_full_transaction, search_projection_nodes
+from pattern_distance import subset_distance, min_operation_subset_dp_print
+import functools
+from data_structure import pattern_normalize
+
 
 
 def find_parent_idx_in_heap(number):
@@ -114,6 +118,7 @@ def find_absent_items(base, candidate):
     return absent
 
 
+"""
 def calculate_maximal_pattern_light_constraint(pattern_cluster):
     # a single maximal pattern where the pattern does not need to be found in the database
     event = 0
@@ -135,6 +140,55 @@ def calculate_maximal_pattern_light_constraint(pattern_cluster):
             break
     for i in range(0, len(maximal_pattern)):
         maximal_pattern[i].sort()  # Lexicographic sorting
+    return maximal_pattern
+"""
+
+
+def length_wise_sort(x, y):
+    if len(x) < len(y):
+        return -1 # x is small
+    if len(x) > len(y):
+        return 1 # x is big
+    cnt_x, cnt_y = 0, 0
+    for i in range(0, len(x)):
+        cnt_x += len(x[i])
+    for i in range(0, len(y)):
+        cnt_y += len(y[i])
+    if cnt_x < cnt_y:
+        return -1 # x is small
+    if cnt_x > cnt_y:
+        return 1 # x is big
+    return 1
+
+
+def calculate_maximal_pattern_light_constraint(pattern_cluster):
+    pattern_cluster.sort(key=functools.cmp_to_key(length_wise_sort), reverse=True)
+    maximal_pattern = []
+    _dist = {}
+    for i in range(0, len(pattern_cluster[0])):
+        maximal_pattern.append([])
+        for j in range(0, len(pattern_cluster[0][i])):
+            maximal_pattern[-1].append(pattern_cluster[0][i][j])
+    for i in range(1, len(pattern_cluster)):
+        _dist[i] = None
+    while len(_dist) > 0:
+        best_val, best_key, best_category = None, None, None
+        # print("maximal_pattern ", maximal_pattern)
+        for key in _dist:
+            _dist[key] = subset_distance(a=maximal_pattern, b=pattern_cluster[key]) # distance, category which is larger, dp
+            if best_val is None or best_val > _dist[key][0]:
+                best_val = _dist[key][0]
+                best_key = key
+                best_category = _dist[key][1]
+        # print(f"stat {maximal_pattern}, {pattern_cluster[best_key]}, {best_val}")
+        if best_category == 'a':
+            maximal_pattern = min_operation_subset_dp_print(dp=_dist[best_key][2], larger_pattern=maximal_pattern,
+                                                            smaller_pattern=pattern_cluster[best_key])
+        else:
+            maximal_pattern = min_operation_subset_dp_print(dp=_dist[best_key][2], larger_pattern=pattern_cluster[best_key],
+                                                            smaller_pattern=maximal_pattern)
+        # print("new maximal pattern ", maximal_pattern)
+        del _dist[best_key]
     return maximal_pattern
 
 
@@ -262,10 +316,21 @@ def calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns, cspm_roo
     return set_of_maximal_pattern
 
 
-def print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_pattern):
+def print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_pattern, normalized=False):
     for support in set_of_maximal_pattern:
-        print(f"{support} {len(group_of_pattern[support])} {len(set_of_maximal_pattern[support])}")
-        print(f"{group_of_pattern[support]}")
+        print(f"support={support} group size={len(group_of_pattern[support])} # maximal patterns = {len(set_of_maximal_pattern[support])}")
+        print("Group ")
+        for i in range(0, len(group_of_pattern[support])):
+            if normalized is True:
+                print(pattern_normalize(pattern=group_of_pattern[support][i]))
+            else:
+                print(group_of_pattern[support][i])
+        print("maximal")
+        for i in range(0, len(set_of_maximal_pattern[support])):
+            if normalized is True:
+                print(pattern_normalize(set_of_maximal_pattern[support][i]))
+            else:
+                print(set_of_maximal_pattern[support][i])
         print(set_of_maximal_pattern[support])
 
 

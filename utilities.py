@@ -14,6 +14,7 @@ def calculate_length(pattern):
     return _sum
 
 
+
 def event_enclose_check(event_A, event_B):
     # will check if event_A encloses event_B
     j = 0

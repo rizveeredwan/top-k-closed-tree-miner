@@ -69,15 +69,17 @@ class Main:
             print_cluster_stat(entities=entities, group_of_patterns=group_of_patterns, cspm_root=cspm_root,
                                intra_dist_flag=True, inter_dist_flag=True, silhouette_flag=True)
         else:
-            set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(mined_closed_patterns,
-                                                                                      self.cspm_tree_root)
-            # print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_patterns)
-            set_of_maximal_pattern = {}
-            for support in mined_closed_patterns:
-                set_of_maximal_pattern[support] = [calculate_maximal_pattern_light_constraint(pattern_cluster=
-                                                                                              mined_closed_patterns[
-                                                                                                  support])]
-            print_set_of_maximal_pattern(set_of_maximal_pattern, mined_closed_patterns)
+            if clustering_type == "max_woc":
+                set_of_maximal_pattern = {}
+                for support in mined_closed_patterns:
+                    set_of_maximal_pattern[support] = [calculate_maximal_pattern_light_constraint(pattern_cluster=
+                                                                                                  mined_closed_patterns[
+                                                                                                      support])]
+                    print("Done")
+            if clustering_type == "max_wc":
+                set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(mined_closed_patterns,
+                                                                                          self.cspm_tree_root)
+            print_set_of_maximal_pattern(set_of_maximal_pattern, mined_closed_patterns, normalized=True)
         """
         f = open(os.path.join('kclotreeminer_output.txt'), 'w')
         for i in range(0, len(all_patterns)):
@@ -114,7 +116,7 @@ if __name__ == '__main__':
     tracemalloc.start()
     obj = Main(HOOK_BITSET_BASED_NODE_PROJECTION=True)
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=3, mining_type="redundancy_aware", summarize_flag=True, clusterting_type="k_medoid",
+    obj.clo_tree_miner(K=3, mining_type="group", summarize_flag=True, clusterting_type="max_woc",
                        max_number_of_iterations=200)
     # displaying the memory
     current, peak = tracemalloc.get_traced_memory()
