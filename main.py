@@ -49,7 +49,7 @@ class Main:
         # self.debug.sanity_test_next_links(self.cspm_tree_root)
 
     def apply_summarizaion(self, mined_closed_patterns, clustering_type="k_means", K=3,
-                           max_number_of_iterations=1000, cspm_root=None, tolerance=5):
+                           max_number_of_iterations=1000, cspm_root=None, tolerance=50):
         # example, mined_closed_patterns = {3: [a, b, c], 2: [d, dc] ... }
         if clustering_type == "k_means" or clustering_type == "k_medoid":
             group_of_patterns = []
@@ -67,7 +67,9 @@ class Main:
                                                 max_number_of_iterations=max_number_of_iterations, cspm_root=cspm_root,
                                                 tolerance=tolerance)
             print_cluster_stat(entities=entities, group_of_patterns=group_of_patterns, cspm_root=cspm_root,
-                               intra_dist_flag=True, inter_dist_flag=True, silhouette_flag=True)
+                               intra_dist_flag=True, inter_dist_flag=True, silhouette_flag=True, pattern_normalize_flag=True)
+
+
         else:
             if clustering_type == "max_woc":
                 set_of_maximal_pattern = {}
@@ -78,7 +80,6 @@ class Main:
             if clustering_type == "max_wc":
                 set_of_maximal_pattern = calculate_maximal_pattern_hard_constraint_greedy(mined_closed_patterns,
                                                                                           self.cspm_tree_root)
-                print("GOT IT")
             print_set_of_maximal_pattern(set_of_maximal_pattern, mined_closed_patterns, normalized=True)
         """
         f = open(os.path.join('kclotreeminer_output.txt'), 'w')
@@ -91,7 +92,7 @@ class Main:
         """
 
     def clo_tree_miner(self, K, mining_type="generic", summarize_flag=False, clusterting_type="k_means",
-                       max_number_of_iterations=100, tolerance=5):
+                       max_number_of_iterations=100, tolerance=50):
         # mining_type = "generic", "group", "unique"
         NODE_MAPPER = return_node_mapper()
         start = timer()
@@ -116,8 +117,8 @@ if __name__ == '__main__':
     tracemalloc.start()
     obj = Main(HOOK_BITSET_BASED_NODE_PROJECTION=True)
     obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
-    obj.clo_tree_miner(K=3, mining_type="group", summarize_flag=True, clusterting_type="max_wc",
-                       max_number_of_iterations=200)
+    obj.clo_tree_miner(K=3, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
+                       max_number_of_iterations=200, tolerance=70)
     # displaying the memory
     current, peak = tracemalloc.get_traced_memory()
     print(f"current = {current / 1024.0} Kib and peak = {peak / 1024.0} Kib")

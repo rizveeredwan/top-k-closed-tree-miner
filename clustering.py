@@ -8,6 +8,7 @@ from pattern_distance import distance
 from maximal_pattern_find import calculate_maximal_pattern_hard_constraint_greedy, \
     calculate_maximal_pattern_light_constraint
 from utilities import search_projection_nodes
+from data_structure import pattern_normalize
 
 
 class ClusterEntity:
@@ -106,7 +107,7 @@ def inter_cluster_distance(entities, group_of_patterns, i, j, cspm_root, project
     return _sum
 
 
-def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=False, inter_dist_flag=False, silhouette_flag=False):
+def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=False, inter_dist_flag=False, silhouette_flag=False, pattern_normalize_flag=False):
     projection_nodes = []
     for i in range(0, len(group_of_patterns)):
         projection_nodes.append([])
@@ -119,14 +120,26 @@ def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=F
     f = open('each_cluster_distance_stat.csv', 'w', encoding='utf-8', newline='')
     csv_writer = csv.writer(f)
     for i in range(0, len(entities)):
-        print(f"{i+1}:rpr {group_of_patterns[entities[i].rpr]}")
-        csv_writer.writerow([i+1, "rpr", group_of_patterns[entities[i].rpr]])
+        if pattern_normalize_flag is True:
+            print(f"{i+1}:rpr {pattern_normalize(group_of_patterns[entities[i].rpr])}")
+        else:
+            print(f"{i + 1}:rpr {group_of_patterns[entities[i].rpr]}")
+        if pattern_normalize_flag is True:
+            csv_writer.writerow([i + 1, "rpr", pattern_normalize(group_of_patterns[entities[i].rpr])])
+        else:
+            csv_writer.writerow([i + 1, "rpr", group_of_patterns[entities[i].rpr]])
         csv_writer.writerow(['pattern', 'distance', 'td', 'lcsd', 'sfd'])
         for j in range(0,len(entities[i].cluster_members)):
             print(f"{group_of_patterns[entities[i].cluster_members[j]]} dist={round(entities[i].saved_distances[j][0], 2)} td={round(entities[i].saved_distances[j][1], 2)} "
                   f"lcsd={round(entities[i].saved_distances[j][2], 2)} sfd={round(entities[i].saved_distances[j][3], 2)}")
-            csv_writer.writerow([group_of_patterns[entities[i].cluster_members[j]], round(entities[i].saved_distances[j][0], 2),
-                                 round(entities[i].saved_distances[j][1], 2), round(entities[i].saved_distances[j][2], 2), round(entities[i].saved_distances[j][3], 2)])
+            if pattern_normalize_flag is True:
+                csv_writer.writerow(
+                    [pattern_normalize(group_of_patterns[entities[i].cluster_members[j]]), round(entities[i].saved_distances[j][0], 2),
+                     round(entities[i].saved_distances[j][1], 2), round(entities[i].saved_distances[j][2], 2),
+                     round(entities[i].saved_distances[j][3], 2)])
+            else:
+                csv_writer.writerow([group_of_patterns[entities[i].cluster_members[j]], round(entities[i].saved_distances[j][0], 2),
+                                     round(entities[i].saved_distances[j][1], 2), round(entities[i].saved_distances[j][2], 2), round(entities[i].saved_distances[j][3], 2)])
         if intra_dist_flag is True:
             intra_dis = intra_cluster_distance(entity=entities[i], group_of_patterns=group_of_patterns,
                                                cspm_root=cspm_root, projection_nodes=projection_nodes)
@@ -147,16 +160,32 @@ def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=F
             csv_writer = csv.writer(f)
             csv_writer.writerow(['Serial', 'Pattern', 'Silhouette Coefficient'])
             for key in s_measure:
-                csv_writer.writerow([key, group_of_patterns[key], s_measure[key]])
+                if pattern_normalize_flag is True:
+                    csv_writer.writerow([key, pattern_normalize(group_of_patterns[key]), s_measure[key]])
+                else:
+                    csv_writer.writerow([key, group_of_patterns[key], s_measure[key]])
 
     with open("distance_stat.csv", "w", newline='', encoding='utf-8') as f:
+        for i in range(0, len(group_of_patterns)):
+            if pattern_normalize_flag is True:
+                print(f"{i}: {pattern_normalize(group_of_patterns[i])}")
+            else:
+                print(f"{i}: {group_of_patterns[i]}")
         _list = []
         w = csv.writer(f)
+        for i in range(0, len(group_of_patterns)):
+            _list = []
+            for j in range(0, len(group_of_patterns)):
+                v = distance(a=group_of_patterns[i], b=group_of_patterns[j], cspm_root=cspm_root, projection_a=None, projection_b=None, print_flag=False)
+                _list.append(round(v[0], 2))
+            w.writerow(_list)
+        """
         for i in range(0, len(entities)):
             _list.clear()
             for j in range(0, len(entities)):
                 _list.append(save_dist[i][j])
             w.writerow(_list)
+        """
 
 
 
@@ -178,10 +207,10 @@ def divide_into_clusters(k, group_of_patterns, entities, cspm_root, projection_n
                 print(f" pattern = {group_of_patterns[entities[j].rpr]}")
                 min_dist, save_td, save_lcsd, save_sfd  = distance(a=patt, b=rpr_pattern, cspm_root=cspm_root, projection_a=projection_nodes[i],
                             projection_b=projection_nodes[entities[j].rpr], print_flag=True)
+                total_cost += min_dist
                 break
             dist, td, lcsd, sfd = distance(a=patt, b=rpr_pattern, cspm_root=cspm_root, projection_a=projection_nodes[i],
                             projection_b=projection_nodes[entities[j].rpr])
-            total_cost += dist
             if min_dist is None or min_dist > dist:
                 min_dist = dist
                 best_rpr = j
@@ -190,6 +219,7 @@ def divide_into_clusters(k, group_of_patterns, entities, cspm_root, projection_n
                 save_sfd = sfd
         entities[best_rpr].cluster_members.append(i)  # ith pattern in that cluster
         entities[best_rpr].saved_distances.append([min_dist, save_td, save_lcsd, save_sfd]) # saving the distance as well
+        total_cost += min_dist
     return entities, total_cost
 
 
@@ -309,9 +339,10 @@ def k_medoids_clustering(group_of_patterns=[], K=3, max_number_of_iterations=100
     tolerance_cnt = 0
     last_best_cost = total_cost
     while i <= max_number_of_iterations:
-        print(f"{i}: new repr {[entities[j].rpr for j in range(len(entities))]} total_cost {total_cost}")
+        print(f"{i}: new repr {[entities[j].rpr for j in range(len(entities))]} last_best_cost {last_best_cost}")
         i += 1
         idx = random.randint(0, len(entities)-1) # the representative to be changed
+        print("idx ", idx, [entities[j].rpr for j in range(len(entities))])
         prev_rpr = entities[idx].rpr
         while True:
             new_rpr = random.randint(0, len(group_of_patterns)-1)
@@ -325,6 +356,7 @@ def k_medoids_clustering(group_of_patterns=[], K=3, max_number_of_iterations=100
                 break
         entities, total_cost = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
                                                     cspm_root=cspm_root, projection_nodes=projection_nodes)
+        print(f"updated reprs {[entities[j].rpr for j in range(len(entities))]} total_cost {total_cost}")
         if last_best_cost <= total_cost:
             # previous cost was better
             entities[idx].rpr = prev_rpr
