@@ -207,7 +207,6 @@ def divide_into_clusters(k, group_of_patterns, entities, cspm_root, projection_n
                 print(f" pattern = {group_of_patterns[entities[j].rpr]}")
                 min_dist, save_td, save_lcsd, save_sfd  = distance(a=patt, b=rpr_pattern, cspm_root=cspm_root, projection_a=projection_nodes[i],
                             projection_b=projection_nodes[entities[j].rpr], print_flag=True)
-                total_cost += min_dist
                 break
             dist, td, lcsd, sfd = distance(a=patt, b=rpr_pattern, cspm_root=cspm_root, projection_a=projection_nodes[i],
                             projection_b=projection_nodes[entities[j].rpr])

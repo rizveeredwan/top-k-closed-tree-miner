@@ -3,7 +3,7 @@ class Database:
         self.insert_database = {}
         self.delete_database = {}
 
-    def ReadFile(self, file_name):
+    def ReadFile(self, file_name, operation_flag_on=True):
         f = open(file_name, 'r')
         lines = f.readlines()
         sid, operation, event = "", "", []
@@ -12,11 +12,18 @@ class Database:
         for line in lines:
             l = line.strip().split(' ')
             sid = int(l[0].strip())
-            operation = int(l[1].strip())
+            if operation_flag_on is True:
+                operation = int(l[1].strip()) # 0: Insertion, 1: Append, 2:Deletion etc
+            else:
+                operation = 0
             if operation == 0:
                 self.insert_database[sid] = []
                 self.insert_database[sid].append([])
-                for i in range(2, len(l)-1):
+                if operation_flag_on is False:
+                    start = 1
+                else:
+                    start = 2
+                for i in range(start, len(l)-1):
                     item = int(l[i].strip())
                     if item < 0:
                         if i == len(l)-2:

@@ -1,69 +1,81 @@
-d= {}
-d[2]={}
-d[2][3]=10
+d = {}
+d[2] = {}
+d[2][3] = 10
 print(d)
 del d[2][3]
-u = (2,3)
+u = (2, 3)
 d = {
- u:10
+    u: 10
 }
 print(d)
-u = ((2,3))
-v = (3,4)
-print(u+v)
+u = ((2, 3))
+v = (3, 4)
+print(u + v)
 
-def func(list, idx1,idx2):
- temp = list[idx1]
- list[idx1] = list[idx2]
- list[idx2] = temp
+
+def func(list, idx1, idx2):
+    temp = list[idx1]
+    list[idx1] = list[idx2]
+    list[idx2] = temp
+
 
 import sys
 
-a  = [1, 0, 1, 1, 1, 1]
+a = [1, 0, 1, 1, 1, 1]
 b = [True, False, True, True, True, True]
-c="101111"
+c = "101111"
 d = "".join("1" for i in range(70))
 print(sys.getsizeof(a), sys.getsizeof(b), sys.getsizeof(c), d, sys.getsizeof(d))
 
-def f1(var):
- save = []
- idx = 0
- itr = 0
- while var > 0:
-  if var%2 == 1:
-   save.append(idx)
-  idx += 1
-  var = var // 2
-  itr += 1
-  # print(var)
- # print(save, len(save))
- print(itr)
- return len(save)
 
+def f1(var):
+    save = []
+    idx = 0
+    itr = 0
+    while var > 0:
+        if var % 2 == 1:
+            save.append(idx)
+        idx += 1
+        var = var // 2
+        itr += 1
+        # print(var)
+    # print(save, len(save))
+    print(itr)
+    return len(save)
 
 
 def f2(var):
- save = []
- itr = 0
- while var > 0:
-  itr += 1
-  lsb = var ^ (var-1) # LSB and some small bits might be set
-  lsb = var & lsb # only the LSB bit is set
-  save.append(lsb)
-  var = var ^ lsb # LSB is off
- # print(save, len(save))
- print(itr)
- return len(save)
+    save = []
+    itr = 0
+    while var > 0:
+        itr += 1
+        lsb = var ^ (var - 1)  # LSB and some small bits might be set
+        lsb = var & lsb  # only the LSB bit is set
+        save.append(lsb)
+        var = var ^ lsb  # LSB is off
+    # print(save, len(save))
+    print(itr)
+    return len(save)
 
 
 import time
+import random
+
+value = 0
+idx = 0
+set_bits = []
+while len(set_bits) < 100:
+    idx = random.randint(0, 100000)
+    if idx not in set_bits:
+        set_bits.append(idx)
+        value = value | (1 << idx)
 
 start = time.time()
-ans1 = f1(1<<100000 | 1<<1000 | 1 << 1500 | 1 << 789 | 1 << 345) #
+ans1 = f1(value)  #
 end = time.time()
-print(start, end, end-start)
+print(start, end, end - start)
 start = time.time()
-ans2 = f2(1<<100000 | 1<<1000 | 1 << 1500 | 1 << 789 | 1 << 345)
+ans2 = f2(value)
 end = time.time()
-print(start, end, end-start)
-assert(ans1 == ans2)
+print(start, end, end - start)
+assert (ans1 == ans2)

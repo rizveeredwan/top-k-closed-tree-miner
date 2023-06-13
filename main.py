@@ -30,7 +30,7 @@ class Main:
 
     def read(self, file_name):
         database_object = Database()
-        database_object.ReadFile(file_name)
+        database_object.ReadFile(file_name, operation_flag_on=False)
         # database_object.PrintDatabase() # Printing raw database
         successors = {}
         item_freq = {}
