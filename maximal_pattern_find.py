@@ -317,8 +317,10 @@ def calculate_maximal_pattern_hard_constraint_greedy(group_of_patterns, cspm_roo
 
 
 def print_set_of_maximal_pattern(set_of_maximal_pattern, group_of_pattern, normalized=False):
+    w = open("maximal_patterns.txt",'w', errors='ignore')
     for support in set_of_maximal_pattern:
         print(f"support={support} group size={len(group_of_pattern[support])} # maximal patterns = {len(set_of_maximal_pattern[support])}")
+        w.write(str(support)+' '+str(len(group_of_pattern[support]))+' '+str(len(set_of_maximal_pattern[support]))+'\n')
         print("Group ")
         for i in range(0, len(group_of_pattern[support])):
             if normalized is True:

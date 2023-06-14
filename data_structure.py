@@ -389,6 +389,14 @@ class CapheNode:
         self.support = self.idx_in_heap = None
         self.stored_patterns.clear()
 
+    def check_presence_of_closed_patterns(self):
+        if self.stored_patterns['closed'] is not None:
+            for l in self.stored_patterns['closed']:
+                head = self.stored_patterns['closed'][l][0]
+                if head.next is not None and head.next.pattern is not None:
+                    return True # there are some closed patterns
+        return False
+
 
 class MinHeap:
     # min heap to hold the support only

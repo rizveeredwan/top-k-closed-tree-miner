@@ -296,15 +296,6 @@ class KCloTreeMiner:
         while len(self.caphe.nodes) > 0:
             print(f"ITERATION STARTED")
             iteration += 1
-            # Debug printing
-            if iteration == 25:
-                print("Debug printing start ", self.mined_pattern)
-                print("Candidate")
-                self.caphe.print_stored_pattern_in_caphe(self.support_table, print_type="candidate", patt_norm=True)
-                print("Closed")
-                self.caphe.print_stored_pattern_in_caphe(self.support_table, print_type="closed", patt_norm=True)
-                print("Debug printing end")
-
             caphe_node = self.caphe.front()  # CaPHe node extraction
             if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                 if self.mined_pattern >= K:  # tracking the last highest support
@@ -324,7 +315,9 @@ class KCloTreeMiner:
             if pb is None:  # No more candidates
                 self.caphe.pop()
                 if self.mine_nature == "group":
-                    self.mined_pattern += 1
+                    if caphe_node.check_presence_of_closed_patterns() is True:
+                        # there are some closed patterns with this support
+                        self.mined_pattern += 1
                     last_saved_support = caphe_node.support # saving the last max support observed
                     print(f"patterns with support ended {caphe_node.support}")
                 continue  # with next highest support
@@ -497,7 +490,6 @@ class KCloTreeMiner:
                             s_ex=None, i_ex=None, NODE_MAPPER=NODE_MAPPER)
                         i_ex_pbs.append(new_pb)
                         new_i_ex.append(pb.i_ex[i])
-
             if pb.closed_flag == 1:  # pb is identified as closed pattern
                 if self.mine_nature == "generic" or self.mine_nature == "redundancy_aware":
                     self.mined_pattern += 1
