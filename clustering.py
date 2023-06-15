@@ -36,11 +36,12 @@ def calculate_a_measure_for_silhouette(group_of_patterns, pattern_idx, entity, c
 
 
 def calculate_b_measure_for_silhouette(group_of_patterns, pattern_idx, entities, entity_idx, cspm_root, projection_nodes):
-    _sum = 0.0
-    cnt = 0
+    min_dist = None
     for i in range(0, len(entities)):
         if i == entity_idx: # omitting the patterns of same cluster
             continue
+        _sum = 0.0
+        cnt = 0
         for j in range(0, len(entities[i].cluster_members)):
             base_pattern = group_of_patterns[pattern_idx]
             comp_pattern = group_of_patterns[entities[i].cluster_members[j]]
@@ -49,9 +50,12 @@ def calculate_b_measure_for_silhouette(group_of_patterns, pattern_idx, entities,
                             projection_b=projection_nodes[entities[i].cluster_members[j]])
             _sum += dist
             cnt += 1
-    if cnt == 0:
-        cnt = 1
-    return _sum / (1.0 * cnt)
+        if cnt == 0:
+            cnt = 1
+        _sum /= (1.0 * cnt)
+        if min_dist is None or min_dist > _sum:
+            min_dist = _sum
+    return min_dist
 
 
 def calculate_silhouette_coefficient(group_of_patterns, entities, cspm_root, projection_nodes):
