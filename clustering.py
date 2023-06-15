@@ -344,6 +344,8 @@ def k_medoids_clustering(group_of_patterns=[], K=3, max_number_of_iterations=100
         print("idx ", idx, [entities[j].rpr for j in range(len(entities))])
         prev_rpr = entities[idx].rpr
         while True:
+            if len(group_of_patterns) == K:
+                break
             new_rpr = random.randint(0, len(group_of_patterns)-1)
             flag = True
             for j in range(0,len(entities)):
