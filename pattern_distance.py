@@ -293,7 +293,7 @@ def distance(a, b, cspm_root, projection_a=None, projection_b=None, print_flag =
     sfd, _ , _ = subset_distance(a,b)
     value = alpha * td + beta * lcsd + gamma * sfd
     if print_flag is True:
-        print(f"td = {td} lcsd = {lcsd} sfd = {sfd}")
+        print(f"a = {a} b = {b} td = {td} lcsd = {lcsd} sfd = {sfd}")
     return value, td, lcsd, sfd
 
 
