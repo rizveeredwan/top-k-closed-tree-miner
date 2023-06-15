@@ -367,7 +367,7 @@ def k_medoids_clustering(group_of_patterns=[], K=3, max_number_of_iterations=100
             entities[idx].rpr = prev_rpr
             tolerance_cnt += 1
             # getting the cluster points
-            if tolerance_cnt == tolerance:
+            if tolerance_cnt == tolerance or abs(last_best_cost-0) <= 0.0000000001:
                 entities, total_cost = divide_into_clusters(k=K, group_of_patterns=group_of_patterns, entities=entities,
                                                         cspm_root=cspm_root, projection_nodes=projection_nodes)
                 break
