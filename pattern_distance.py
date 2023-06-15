@@ -162,7 +162,7 @@ def _intersection(set_a, set_b, projection_order_preserved):
                 if set_a[i].child_link is not None:
                     # has some child node beneath
                     for ev in set_a[i].child_link:
-                        for it in ev:
+                        for it in set_a[i].child_link[ev]:
                             # saving the difference between the parent's count and children's count
                             _sum -= set_a[i].child_link[ev][it].count
                 i += 1
@@ -197,7 +197,7 @@ def _union(set_a, set_b, projection_order_preserved):
                     _sum += set_a[i].count
                     if set_a[i].child_link is not None:
                         for ev in set_a[i].child_link:
-                            for it in ev:
+                            for it in set_a[i].child_link[ev]:
                                 # saving the difference between the parent's count and children's count
                                 _sum -= set_a[i].child_link[ev][it].count
                     i += 1
@@ -206,7 +206,7 @@ def _union(set_a, set_b, projection_order_preserved):
                     _sum += set_a[i].count
                     if set_a[i].child_link is not None:
                         for ev in set_a[i].child_link:
-                            for it in ev:
+                            for it in set_a[i].child_link[ev]:
                                 # saving the difference between the parent's count and children's count
                                 _sum -= set_a[i].child_link[ev][it].count
                     i += 1
@@ -214,7 +214,7 @@ def _union(set_a, set_b, projection_order_preserved):
                     _sum += set_b[j].count
                     if set_b[j].child_link is not None:
                         for ev in set_b[j].child_link:
-                            for it in ev:
+                            for it in set_b[j].child_link[ev]:
                                 # saving the difference between the parent's count and children's count
                                 _sum -= set_b[j].child_link[ev][it].count
                     j += 1
@@ -222,7 +222,7 @@ def _union(set_a, set_b, projection_order_preserved):
                 _sum += set_a[i].count
                 if set_a[i].child_link is not None:
                     for ev in set_a[i].child_link:
-                        for it in ev:
+                        for it in set_a[i].child_link[ev]:
                             # saving the difference between the parent's count and children's count
                             _sum -= set_a[i].child_link[ev][it].count
                 i += 1
@@ -230,7 +230,7 @@ def _union(set_a, set_b, projection_order_preserved):
                 _sum += set_b[j].count
                 if set_b[j].child_link is not None:
                     for ev in set_b[j].child_link:
-                        for it in ev:
+                        for it in set_b[j].child_link[ev]:
                             # saving the difference between the parent's count and children's count
                             _sum -= set_b[j].child_link[ev][it].count
                 j += 1
@@ -240,13 +240,13 @@ def _union(set_a, set_b, projection_order_preserved):
         for i in range(0, len(set_a)):
             _sum += set_a[i].count
             for ev in set_a[i].child_link:
-                for it in ev:
+                for it in set_a[i].child_link[ev]:
                     # saving the difference between the parent's count and children's count
                     _sum -= set_a[i].child_link[ev][it].count
         for i in range(0, len(set_b)):
             _sum += set_b[i].count
             for ev in set_b[i].child_link:
-                for it in ev:
+                for it in set_b[i].child_link[ev]:
                     # saving the difference between the parent's count and children's count
                     _sum -= set_b[i].child_link[ev][it].count
         _sum = _sum - _intersection(set_a=set_a, set_b=set_b, projection_order_preserved=projection_order_preserved)
@@ -259,16 +259,23 @@ def transaction_wise_distance(a, b, cspm_root, projection_a=None, projection_b=N
     if projection_a is None:
         projection_a = []
         search_projection_nodes(node=cspm_root, pattern=a, ev=0, it=0, projection_nodes=projection_a)
+    # print(f"wtf check {[ projection_a[i].node_id for i in range(0, len(projection_a))]}")
+    # print(f"wtf asst check {[projection_a[i].node_id > projection_a[i-1].node_id for i in range(1, len(projection_a))]}")
     if projection_b is None:
         projection_b = []
         search_projection_nodes(node=cspm_root, pattern=b, ev=0, it=0, projection_nodes=projection_b)
+    # print(f"wtf check {[projection_b[i].node_id for i in range(0, len(projection_b))]}")
+    # print(f"wtf asst check {[projection_b[i].node_id > projection_b[i - 1].node_id for i in range(1, len(projection_b))]}")
     # Second get the leaf nodes/Pseudo Leaf nodes
     leaf_a = []
     for i in range(0, len(projection_a)):
         find_leaf_nodes(current_node=projection_a[i], leaf_nodes=leaf_a)
+    # print(f"wtf check leaves {[leaf_a[i].node_id for i in range(0, len(leaf_a))]}")
     leaf_b = []
     for i in range(0, len(projection_b)):
         find_leaf_nodes(current_node=projection_b[i], leaf_nodes=leaf_b)
+    # print(f"wtf check leaves {[leaf_b[i].node_id for i in range(0, len(leaf_b))]}")
+    # print("DONE EI PORJONTO")
     # Third calculate the intersection and union
     projection_order_preserved = check_projection_order(projection_nodes=leaf_a) & check_projection_order(projection_nodes=leaf_b)
     assert(projection_order_preserved is True)

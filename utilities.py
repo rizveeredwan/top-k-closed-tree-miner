@@ -116,16 +116,26 @@ def enclosure_absorption_check(pattern, cspm_tree_nodes, projection_status, caph
 def find_leaf_nodes(current_node, leaf_nodes):
     # From the current node reach the leaf nodes
     assert(current_node is not None)
-    _sum = 0
     if current_node.child_link is not None:
         # non leaf node
+        _sum = 0
         for ev in current_node.child_link:
             for it in current_node.child_link[ev]:
                 _sum += current_node.child_link[ev][it].count
+        if _sum < current_node.count: # it itself is a leaf node
+            if len(leaf_nodes) > 0:
+                assert (current_node.node_id >= leaf_nodes[-1].node_id)
+            leaf_nodes.append(current_node)
+        for ev in current_node.child_link:
+            for it in current_node.child_link[ev]:
                 find_leaf_nodes(current_node=current_node.child_link[ev][it], leaf_nodes=leaf_nodes)
-    if _sum < current_node.count:
+    else:
+        # leaf node
         leaf_nodes.append(current_node)  # Pseudo leaf node/leaf node
+        if len(leaf_nodes) > 0:
+            assert(current_node.node_id >= leaf_nodes[-1].node_id)
     return
+
 
 
 def extract_the_full_transaction(cspm_tree_node):
@@ -160,6 +170,8 @@ def search_projection_nodes(node, pattern, ev, it, projection_nodes):
     # For the pattern finding its projection nodes in the tree
     if ev == len(pattern):
         projection_nodes.append(node)
+        if len(projection_nodes) > 1:
+            assert(projection_nodes[-1].node_id > projection_nodes[-2].node_id) # normal saving order preserve
         return
     elif it == len(pattern[ev]):
         search_projection_nodes(node=node, pattern=pattern, ev=ev + 1, it=0, projection_nodes=projection_nodes)
@@ -191,9 +203,10 @@ def search_projection_nodes(node, pattern, ev, it, projection_nodes):
 def check_projection_order(projection_nodes):
     # trying to see if all the nodes are projected in the ascending order of their node ids or not
     for i in range(1, len(projection_nodes)):
-        if projection_nodes[i].node_id > projection_nodes[i - 1].node_id:
+        if projection_nodes[i].node_id >= projection_nodes[i - 1].node_id:
             continue
         else:
+            print("problem ", projection_nodes[i].node_id, projection_nodes[i-1].node_id)
             return False  # did not preserve the order
     return True  # maintained the order
 

@@ -109,6 +109,8 @@ class KCloTreeMiner:
         final_list_head = PatternExtensionLinkedList(node=None, projection_status=None)
         current = final_list_head
         for i in range(0, len(cspm_tree_nodes)):
+            if i>0:
+                assert(cspm_tree_nodes[i].node_id > cspm_tree_nodes[i-1].node_id)
             assert (projection_status[i] == "0" or projection_status[i] == "1")  # intermediate vs completed
             n = PatternExtensionLinkedList(node=cspm_tree_nodes[i], projection_status=projection_status[i])
             current.insert(node=n, prev_node=current)

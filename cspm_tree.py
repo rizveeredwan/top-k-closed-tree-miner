@@ -132,6 +132,7 @@ class CSPMTree:
                     if node.down_next_link_ptr.get(child.item) is None:
                         node.down_next_link_ptr[child.item] = [child, child]
                     else:
+                        assert(child.node_id > node.down_next_link_ptr[child.item][1].node_id)
                         node.down_next_link_ptr[child.item][1].side_next_link_next = child
                         child.side_next_link_prev = node.down_next_link_ptr[child.item][1]
                         node.down_next_link_ptr[child.item][1] = child
