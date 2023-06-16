@@ -92,7 +92,7 @@ class Main:
         """
 
     def clo_tree_miner(self, K, mining_type="generic", summarize_flag=False, clusterting_type="k_means",
-                       max_number_of_iterations=100, tolerance=50):
+                       max_number_of_iterations=100, tolerance=50, number_of_centroids=None):
         # mining_type = "generic", "group", "unique"
         NODE_MAPPER = return_node_mapper()
         start = timer()
@@ -100,7 +100,9 @@ class Main:
                                                            NODE_MAPPER=NODE_MAPPER,
                                                            mining_type=mining_type)
         if mining_type == "group" and summarize_flag is True:
-            self.apply_summarizaion(mined_closed_patterns, K=K, max_number_of_iterations=max_number_of_iterations,
+            if number_of_centroids is None:
+                number_of_centroids = K
+            self.apply_summarizaion(mined_closed_patterns, K=number_of_centroids, max_number_of_iterations=max_number_of_iterations,
                                     cspm_root=self.cspm_tree_root,
                                     tolerance=tolerance, clustering_type=clusterting_type)
         end = timer()
@@ -116,9 +118,9 @@ if __name__ == '__main__':
     start_time = time.process_time()
     tracemalloc.start()
     obj = Main(HOOK_BITSET_BASED_NODE_PROJECTION=True)
-    obj.read(file_name=os.path.join('.', 'dataset', 'msnbc.txt'))
-    obj.clo_tree_miner(K=100, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
-                       max_number_of_iterations=200, tolerance=70)
+    obj.read(file_name=os.path.join('.', 'dataset', 'closed_dataset17.txt'))
+    obj.clo_tree_miner(K=5, mining_type="group", summarize_flag=True, clusterting_type="k_medoid",
+                       max_number_of_iterations=200, tolerance=70, number_of_centroids=3)
     # displaying the memory
     current, peak = tracemalloc.get_traced_memory()
     print(f"current = {current / 1024.0} Kib and peak = {peak / 1024.0} Kib")
@@ -126,4 +128,7 @@ if __name__ == '__main__':
     tracemalloc.stop()
     end_time = time.process_time()
     print(f"total elapsed time {end_time-start_time}")
+
+# rizveeredwan
+# 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
 

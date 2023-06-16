@@ -133,7 +133,7 @@ def characters_between_events(ev1, ev2):
     return match
 
 
-def lcs_similarity(a, b):
+def lcs_similarity(a, b, normalized=True):
     # Longest Common Subsequence based distance
     dp = {}
     # Base Case
@@ -148,7 +148,11 @@ def lcs_similarity(a, b):
             dp[i][j] = dp[i-1][j-1] + characters_between_events(ev1=a[i-1], ev2=b[j-1])
             dp[i][j] = max(dp[i][j], dp[i-1][j])
             dp[i][j] = max(dp[i][j], dp[i][j-1])
-    return dp[len(a)][len(b)]/(1.0 * max(number_of_characters(a), number_of_characters(b)))
+    if normalized is True:
+        return dp[len(a)][len(b)] / (1.0 * max(number_of_characters(a), number_of_characters(b)))
+    else:
+        return dp[len(a)][len(b)]
+
 
 
 def _intersection(set_a, set_b, projection_order_preserved):
@@ -286,7 +290,7 @@ def transaction_wise_distance(a, b, cspm_root, projection_a=None, projection_b=N
     return result
 
 
-def distance(a, b, cspm_root, projection_a=None, projection_b=None, print_flag = False, alpha=0.25, beta=0.25, gamma=0.5):
+def distance(a, b, cspm_root, projection_a=None, projection_b=None, print_flag = False, alpha=0.5, beta=0.5, gamma=0):
     # calculating distance between pattern a and pattern b
     td = transaction_wise_distance(a, b, cspm_root, projection_a=projection_a, projection_b=projection_b)
     lcsd = 1.0 - lcs_similarity(a, b)

@@ -4,7 +4,7 @@
 import csv
 import random
 
-from pattern_distance import distance
+from pattern_distance import distance, lcs_similarity, number_of_characters
 from maximal_pattern_find import calculate_maximal_pattern_hard_constraint_greedy, \
     calculate_maximal_pattern_light_constraint
 from utilities import search_projection_nodes
@@ -169,6 +169,28 @@ def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=F
                 else:
                     csv_writer.writerow([key, group_of_patterns[key], s_measure[key]])
 
+            csv_writer.writerow(['cluster', 'average lcs coverage'])
+            for i in range(0, len(entities)):
+                rpr = group_of_patterns[entities[i].rpr]
+                _sum = 0.0
+                for j in range(0, len(entities[i].cluster_members)):
+                    if entities[i].cluster_members[j] == entities[i].rpr:
+                        continue
+                    mem = group_of_patterns[entities[i].cluster_members[j]]
+                    lcs_val = lcs_similarity(a=rpr, b=mem, normalized=False)
+                    lcs_val /= (1.0 * number_of_characters(mem))
+                    _sum += lcs_val
+                _sum /= (len(entities[i].cluster_members)-1)
+                csv_writer.writerow(['cluster '+str(i+1), _sum])
+
+            csv_writer.writerow(['cluster', 'avg silhouette width'])
+            for i in range(0, len(entities)):
+                sil = 0
+                for j in range(0, len(entities[i].cluster_members)):
+                    sil += s_measure[entities[i].cluster_members[j]]
+                sil /= (1.0 * len(entities[i].cluster_members) - 1)
+                csv_writer.writerow(['cluster '+str(i+1), round(sil,2)])
+
     with open("distance_stat.csv", "w", newline='', encoding='utf-8') as f:
         for i in range(0, len(group_of_patterns)):
             if pattern_normalize_flag is True:
@@ -190,7 +212,6 @@ def print_cluster_stat(entities, group_of_patterns, cspm_root, intra_dist_flag=F
                 _list.append(save_dist[i][j])
             w.writerow(_list)
         """
-
 
 
 def divide_into_clusters(k, group_of_patterns, entities, cspm_root, projection_nodes):
